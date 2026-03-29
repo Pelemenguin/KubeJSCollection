@@ -4,9 +4,9 @@ namespace Internal {
     namespace pelemenguin$TConModifierJS {
 
         /**
-         * All the aliases of the types defined in the `Internal` namespace (ProbeJS 6).  
-         * If you used a different ProbeJS version or typing files with different type names,
-         * you can change the type definitions here to match the actual types.
+         * `Internal` 命名空间中定义的类型的所有别名。  
+         * 如果你使用了不同的 ProbeJS 版本或者类型定义文件中类型名称不同，
+         * 你可以在这里更改类型定义以匹配实际类型。
          */
         namespace Alias {
 
@@ -22,7 +22,7 @@ namespace Internal {
             /** `net.minecraft.world.level.Level` */
             type Level        = Internal.Level;
 
-            // TConstruct
+            // 匠魂
 
             /** `slimeknights.tconstruct.library.modifiers.ModifierEntry` */
             type ModifierEntry                            = Internal.ModifierEntry;
@@ -39,105 +39,104 @@ namespace Internal {
             /** `slimeknights.tconstruct.library.tools.stat.FloatToolStat` */
             type FloatToolStat                            = Internal.FloatToolStat;
             /** `slimeknights.tconstruct.library.tools.stat.ToolStats` */
-            type  ToolStats                               = Internal.ToolStats;
-            type $ToolStats                        = typeof Internal.ToolStats;
+            type ToolStats                                = Internal.ToolStats;
 
         }
 
         /**
-         * The base class for all modifiers defined here.
+         * 这里定义的所有强化的基类。
          */
         declare class BaseModifier extends Internal.Modifier {
             /**
-             * @param builder The `Consumer` used to register hooks for this modifier
+             * @param builder 注册钩子方法时使用的 `Consumer`。
              * - - - - -
-             * See
+             * 参见
              * 
-             * Java Documentations：
+             * Java 文档：
              * - [Consumer](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/function/Consumer.html)
              */
             constructor(builder: (registerer: Alias.ModuleHookMap$Builder) => void);
         }
         /**
-         * The builder class.  
+         * Builder 类。
          */
         declare class TConModifierBuilder {
             /**
-             * @deprecated
-             * Use {@linkcode create} instead.
-             * The method `create` can look up for previously created builders to support reload.
+             * @deprecated 用 {@linkcode create} 代替。
+             *             方法 `create` 可以查找之前创建的 Builder 来支持重载。
              * - - - - -
-             * Constructs a new `TConModifierBuilder`.
+             * 构建一个新的 Builder。
              */
             constructor(modifierId: string);
             /**
-             * The id of this modifier.
+             * 该强化的 ID。
              */
             modifierId: string;
             /**
-             * Methods to use.  
-             * **Do not modify**!
+             * 要使用的方法。  
+             * **不要更改**！
              */
             methods: TinkerFunctions
             /**
-             * Creates a new `TConModifierBuilder`.
+             * 创建一个新的 Builder。
              * - - - - -
-             * @param modifierId The id of the modifier.
+             * @param modifierId 
+             * 强化的 ID。
              */
             static create(modifierId: string): TConModifierBuilder;
             /**
-             * Sets the `onInventoryTick` method.
+             * 设置 `onInventoryTick` 方法。
              * 
-             * This method is called every tick for a tool in the player's inventory.
+             * 对于每个拥有该强化的在玩家物品栏中工具，这个方法每游戏刻会调用一次。
              * - - - - -
-             * @param callback The callback function
-             * @returns        The builder itself
+             * @param callback 回调函数
+             * @returns        Builder 本身
              * - - - - -
              * @see {@linkcode TinkerFunctions.onInventoryTick onInventoryTick}
              * - - - - -
-             * Example
+             * 示例
              * 
              * ```javascript
              * TConModifierJS.createModifier("test")
              *     .onInventoryTick((tool, modifier, world, holder, itemSlot, isSelected, isCorrectSlot, stack) => {
              *         if (!isSelected) return;
-             *         console.info("This gotta be so noisy to print every tick! So I'm now ticking only when held. Game tick: " + world.getTime().toFixed());
+             *         console.info("太吵了！每个游戏刻都输出一次！所以我选择只在手持时输出，现在游戏刻数：" + world.getTime().toFixed());
              *     })
              *     .build();
              * ```
              */
             onInventoryTick(callback: TinkerFunctions["onInventoryTick"]): this;
             /**
-             * Sets the `modifyStat` method.
+             * 设置 `modifyStat` 方法。
              * 
-             * This method is called to get some stats (projectile power, draw speed, etc.) to calculate bonus or malus in real time.
+             * 该方法在部分数值（例如弹射物力量、拉弓速度等）计算时实时调用以获取加成或削弱。
              * - - - - -
-             * @param callback The callback function
-             * @returns        The builder itself
+             * @param callback 回调函数
+             * @returns        Builder 本身
              * - - - - -
              * @see {@linkcode TinkerFunctions.modifyStat modifyStat}
              * - - - - -
-             * Example
+             * 示例
              * 
-             * The example below created a modifier `test`.
-             * It gives a bonus 20% projectile damage when the player's health is below 25%.
+             * 下面的示例创建了一个 `test` 强化。
+             * 在生命值低于 25% 时，其增加 20% 弹射物力量。
              * 
              * @example
              * TConModifierJS.createModifier("test")
              *     .modifyStat((tool, modifier, living, stat, baseValue, multiplier) => {
-             *         // Check if it's the stat we want to modify. If not, return the unmodified value.
+             *         // 如果修改的数值类型不是我们想要的弹射物力量，就直接返回原数值，不做更改
              *         if (stat != TConModifierJS.ToolStats.PROJECTILE_DAMAGE) return baseValue;
-             *         // Calculate and check health percentage
+             *         // 计算并检查生命值
              *         let percentage = living.getHealth() / living.getMaxHealth();
              *         if (percentage < 0.25) {
-             *             // Return the modified value
+             *             // 返回修改后的值
              *             return baseValue * (1 + 0.2 * multiplier);
              * 
-             *             // `multiplier` is affected by the tool or other modifiers, providing more extra bonus or malus.
-             *             // If you want to ignore them, use:
+             *             // `multiplier` 会受工具或其它强化的影响，带来更额外的加成或削弱
+             *             // 如果想要忽略这些系数变化，使用：
              *             // return baseValue * 1.2;
              *         } else {
-             *             // Not satisfied, return the unmodified value
+             *             // 不成立，返回未经修改的值
              *             return baseValue;
              *         }
              *     })
@@ -145,15 +144,15 @@ namespace Internal {
              */
             modifyStat(callback: TinkerFunctions["modifyStat"]): this;
             /**
-             * Build the modifier.
+             * 构建该强化。
              * - - - - -
-             * @returns A `StaticModifier` object.
+             * @returns 一个 `StaticModifier` 对象
              */
             build: () => Alias.StaticModifier<BaseModifier>;
         }
         /**
-         * Structure of the object stored in the `global`.  
-         * This object should avoid being accessed.
+         * 储存在 `global` 中的对象结构。  
+         * 该对象应该避免被访问。
          */
         declare interface TheGlobal {
             classLoader: Alias.DefiningClassLoader;
@@ -163,32 +162,32 @@ namespace Internal {
             builderClass: typeof TConModifierBuilder
         }
         /**
-         * Docs for methods of modifiers. 
+         * 强化所使用的方法的文档。
          */
         declare interface TinkerFunctions {
             /**
-             * Called when the stack updates in the player inventory
+             * 在玩家物品栏中的物品更新时调用
              * - - - - -
-             * @param tool             Current tool instance
-             * @param modifier         Modifier running the hook
-             * @param world            World containing tool
-             * @param holder           Entity holding tool
-             * @param itemSlot (`int`) Slot containing this tool. Note this may be from the hotbar, main inventory, or armor inventory
-             * @param isSelected       If true, this item is currently in the player's main hand
-             * @param isCorrectSlot    If true, this item is in the proper slot. For tools, that is main hand or off hand. For armor, this means its in the correct armor slot
-             * @param stack            Item stack instance to check other slots for the tool. Do not modify
+             * @param tool             当前工具实例
+             * @param modifier         运行该钩子方法的强化
+             * @param world            包含该工具的世界
+             * @param holder           手持该工具的实体
+             * @param itemSlot (`int`) 包含该工具的栏位。注意其可能来自热键栏，主物品栏，或者护甲栏位
+             * @param isSelected       若为真，则该物品当前正在玩家的主手上
+             * @param isCorrectSlot    若为真，则该物品在恰当的栏位上。对于工具，这指的是主手或副手。对于护甲，这指的是其所属的护甲栏位
+             * @param stack            物品堆叠实例，用于检查工具的其它栏位。不要更改
              */
             onInventoryTick?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, world: Alias.Level, holder: Alias.LivingEntity, itemSlot: number, isSelected: boolean, isCorrectSlot: boolean, stack: Alias.ItemStack): void;
             /**
-             * Method to modify a stat as the tool is being used
+             * 用于更改工具使用时的数据的方法
              * - - - - -
-             * @param tool         Tool instance
-             * @param modifier     Modifier instance
-             * @param living       Entity holding the tool
-             * @param stat         Stat to be modified, safe to do instance equality
-             * @param baseValue    Value before this hook modified the stat
-             * @param multiplier   Global multiplier, same value contained in the tool, but fetched for convenience as it's commonly needed for stat bonuses
-             * @return             New value of the stat, or baseValue if you choose not to modify this stat
+             * @param tool         工具实例
+             * @param modifier     强化实例
+             * @param living       手持工具的实体
+             * @param stat         要更改的数据，可以安全地进行实例比较
+             * @param baseValue    该钩子方法修改之前的数据
+             * @param multiplier   全局系数，工具中包含了相同的数值，但由于其广泛被额外数值奖励需要，这里为了便利而直接提供
+             * @return             特性的新数值，或者在不想修改数值时返回 `baseValue`
              */
             modifyStat?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, living: Alias.LivingEntity, stat: Alias.FloatToolStat, baseValue: number, multiplier: number): number;
         }
@@ -201,40 +200,40 @@ namespace Internal {
  */
 declare interface TConModifierJS {
     /**
-     * The `ModifierDeferredRegister` object used to register the modifiers.
+     * 注册强化使用的 `ModifierDeferredRegister` 对象。
      */
     MODIFIERS: Internal.pelemenguin$TConModifierJS.Alias.ModifierDeferredRegister;
     /**
-     * Current configs.
+     * 当前配置。
      */
     CONFIGS: {
         /**
-         * Defines the namespace of the modifiers to register.
+         * 定义强化要注册的命名空间。
          */
         MODIFIERS_NAMESPACE: string,
         /**
-         * Defines the location to store in `global`.
+         * 定义在 `global` 中储存的位置。
          */
         GLOBAL_PROPERTY_NAME: string,
         /**
-         * Defines the name of the base class of all modifiers.
+         * 定义所有匠魂强化的基类的名称。
          */
         BASE_MODIFIER_CLASS_NAME: string
     };
     /**
-     * @deprecated Use {@link TConModifierJS.customModifier} instead.
+     * @deprecated 改为使用 {@link TConModifierJS.customModifier}。
      * - - - - -
-     * The base Java class for all modifiers defined here.
+     * 这里定义的所有强化的基类。
      */
     BaseModifier: typeof Internal.pelemenguin$TConModifierJS.BaseModifier;
     /**
-     * The JavaScript class of the modifier builders.
+     * 强化 Builder 的 JavaScript 类。
      */
     TConModifierBuilder: typeof Internal.pelemenguin$TConModifierJS.TConModifierBuilder;
     /**
-     * Collection of all hooks implemented by the mod natively.
+     * 由匠魂本地实现的所有钩子方法，为使用方便而提供。
      * 
-     * This is equivalent to:
+     * 其等价于：
      * 
      * ```javascript
      * Java.loadClass("slimeknights.tconstruct.library.modifiers.ModifierHooks");
@@ -242,29 +241,29 @@ declare interface TConModifierJS {
      */
     ModifierHooks: Internal.pelemenguin$TConModifierJS.Alias.$ModifierHooks;
     /**
-     * Class handling all tool stats, provided for convenience.
+     * 处理所有工具数据的类，为使用方便而提供。
      * 
-     * This is equivalent to:
+     * 其等价于：
      * 
      * ```javascript
      * Java.loadClass("slimeknights.tconstruct.library.tools.stat.ToolStats");
      * ```
      * 
-     * Tinker's Construct stores all its built-in tool stats in static fields of this class.
-     * Due to these tool stats instances are universally unique, you can safely compare using `==` or even `===` without calling `equals` method.
+     * 匠魂将其所有的内置工具数据类型以静态字段储存在这个类中。
+     * 由于这些工具数据类型实例时全局唯一的，你可以放心使用 `==` 甚至 `===` 而无需使用 `equals` 方法。
      */
-    ToolStats: Internal.pelemenguin$TConModifierJS.Alias.$ToolStats;
+    ToolStats: typeof Internal.pelemenguin$TConModifierJS.Alias.ToolStats;
     /**
-     * Creates a custom modifier object.
+     * 创建一个自定义强化对象。
      * - - - - -
-     * @param hookRegisterer The object's own `registerHooks` method.
-     * @returns              The created {@linkcode TConModifierJS.BaseModifier} object.
+     * @param hookRegisterer 该对象自己的 `registerHooks` 方法。
+     * @returns              创建的 {@linkcode TConModifierJS.BaseModifier} 对象。
      */
     customModifier(hookRegisterer: (hookBuilder: Internal.pelemenguin$TConModifierJS.Alias.ModuleHookMap$Builder) => void)
         : Internal.pelemenguin$TConModifierJS.BaseModifier;
     /**
-     * @param modifierId The id of the modifier.
-     * @returns          The created builder.
+     * @param modifierId 强化 ID。
+     * @returns          创建的 Builder 对象。
      */
     createModifier(modifierId: string): Internal.pelemenguin$TConModifierJS.TConModifierBuilder
 }

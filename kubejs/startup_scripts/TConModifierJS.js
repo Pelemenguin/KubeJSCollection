@@ -44,7 +44,14 @@ const $NativeJavaClass     = Java.loadClass("dev.latvian.mods.rhino.NativeJavaCl
 const $Modifier                  = Java.loadClass("slimeknights.tconstruct.library.modifiers.Modifier");
 const $ModifierHooks             = Java.loadClass("slimeknights.tconstruct.library.modifiers.ModifierHooks");
 const $ModifierDeferredRegister  = Java.loadClass("slimeknights.tconstruct.library.modifiers.util.ModifierDeferredRegister");
-const $InventoryTickModifierHook = Java.loadClass("slimeknights.tconstruct.library.modifiers.hook.interaction.InventoryTickModifierHook");
+const $ToolStats                 = Java.loadClass("slimeknights.tconstruct.library.tools.stat.ToolStats");
+
+// Hooks // All of them used `tryLoadClass` to prevent user's TiC version is too low
+
+/** @type {Internal.ConditionalStatModifierHook} */
+const $ConditionalStatModifierHook = Java.tryLoadClass("slimeknights.tconstruct.library.modifiers.hook.build.ConditionalStatModifierHook");
+/** @type {Internal.InventoryTickModifierHook} */
+const $InventoryTickModifierHook   = Java.tryLoadClass("slimeknights.tconstruct.library.modifiers.hook.interaction.InventoryTickModifierHook");
 
 //#endregion
 
@@ -235,7 +242,28 @@ TConModifierBuilderClass.create = (modifierId) => {
 /** @type {Internal.pelemenguin$TConModifierJS.TConModifierBuilder} */
 TConModifierBuilderClass.prototype = {
     onInventoryTick: function (callback) {
-        this.methods.onInventoryTick = callback;
+        this.methods.onInventoryTick = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) => {
+                try {
+                    callback(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+                } catch (e) {
+                    console.error(`Error during "onInventoryTick" of modifier ${this.modifierId}: ` + e)
+                }
+            };
+        return this;
+    },
+    modifyStat: function(callback) {
+        this.methods.modifyStat = (arg0, arg1, arg2, arg3, arg4, arg5) => {
+                try {
+                    let result = callback(arg0, arg1, arg2, arg3, arg4, arg5);
+                    if (result === undefined) {
+                        return arg4;
+                    }
+                    return result;
+                } catch (e) {
+                    console.error(`Error during "modifyStat" of modifier ${this.modifierId}: ` + e)
+                    return arg4;
+                }
+            };
         return this;
     },
     build: function() {
@@ -244,14 +272,15 @@ TConModifierBuilderClass.prototype = {
                 let methodGroup = this.methods
                 if (methodGroup.onInventoryTick) {
                     hooksBuilder.addHook(new JavaAdapter($InventoryTickModifierHook, {
-                        onInventoryTick: (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) => {
-                            try {
-                                this.methods.onInventoryTick(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-                            } catch (e) {
-                                console.error("Error during `onInventoryTick` of modifier \"" + this.modifierId + "\": " + e)
-                            }
-                        }
+                        onInventoryTick: (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) =>
+                            this.methods.onInventoryTick(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
                     }), $ModifierHooks.INVENTORY_TICK);
+                }
+                if (methodGroup.modifyStat) {
+                    hooksBuilder.addHook(new JavaAdapter($ConditionalStatModifierHook, {
+                        modifyStat: (arg0, arg1, arg2, arg3, arg4, arg5) =>
+                            this.methods.modifyStat(arg0, arg1, arg2, arg3, arg4, arg5)
+                    }), $ModifierHooks.CONDITIONAL_STAT);
                 }
             }));
             registeredModifiers[this.modifierId] = built;
@@ -268,16 +297,27 @@ if (firstLoaded) {
 
 /** @type {TConModifierJS} */
 const resultObject = {
+
+    // Constants
     MODIFIERS: modifiersRegistry,
     CONFIGS: CONFIGS,
+
+    // Created classes
     BaseModifier: BaseModifierClass,
     TConModifierBuilder: TConModifierBuilderClass,
+
+    // Pre-loaded classes
+    ToolStats: $ToolStats,
+    ModifierHooks: $ModifierHooks,
+
+    // Tool methods
     customModifier: (hookRegisterer) => {
         return new BaseModifierClass(hookRegisterer);
     },
     createModifier: (modifierId) => {
         return TConModifierBuilderClass.create(modifierId);
     }
+
 };
 
 Object.setPrototypeOf(resultObject, null);
