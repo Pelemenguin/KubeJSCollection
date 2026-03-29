@@ -48,6 +48,8 @@ const $ToolStats                 = Java.loadClass("slimeknights.tconstruct.libra
 
 // Hooks // All of them used `tryLoadClass` to prevent user's TiC version is too low
 
+/** @type {Internal.EquipmentChangeModifierHook} */
+const $EquipmentChangeModifierHook = Java.tryLoadClass("slimeknights.tconstruct.library.modifiers.hook.armor.EquipmentChangeModifierHook");
 /** @type {Internal.ConditionalStatModifierHook} */
 const $ConditionalStatModifierHook = Java.tryLoadClass("slimeknights.tconstruct.library.modifiers.hook.build.ConditionalStatModifierHook");
 /** @type {Internal.InventoryTickModifierHook} */
@@ -251,6 +253,42 @@ TConModifierBuilderClass.prototype = {
             };
         return this;
     },
+    onEquip: function(callback) {
+        this.methods.onEquip = (arg0, arg1, arg2) => {
+            try {
+                callback(arg0, arg1, arg2)
+            } catch (e) {
+                console.error(`Error during "onEquip" of modifier ${this.modifierId}: ` + e)
+            }
+        }
+        if (!this.methods.onUnequip) this.methods.onUnequip = () => {};
+        if (!this.methods.onEquipmentChange) this.methods.onEquipmentChange = () => {};
+        return this;
+    },
+    onUnequip: function (callback) {
+        this.methods.onEquip = (arg0, arg1, arg2) => {
+            try {
+                callback(arg0, arg1, arg2)
+            } catch (e) {
+                console.error(`Error during "onUnequip" of modifier ${this.modifierId}: ` + e)
+            }
+        }
+        if (!this.methods.onEquip) this.methods.onEquip = () => {};
+        if (!this.methods.onEquipmentChange) this.methods.onEquipmentChange = () => {};
+        return this;
+    },
+    onEquipmentChange: function (callback) {
+        this.methods.onEquipmentChange = (arg0, arg1, arg2, arg3) => {
+            try {
+                callback(arg0, arg1, arg2, arg3);
+            } catch (e) {
+                console.error(`Error during "onEquipmentChange" of modifier ${this.modifierId}: ` + e)
+            }
+        }
+        if (!this.methods.onEquip) this.methods.onEquip = () => {};
+        if (!this.methods.onUnequip) this.methods.onUnequip = () => {};
+        return this;
+    },
     modifyStat: function(callback) {
         this.methods.modifyStat = (arg0, arg1, arg2, arg3, arg4, arg5) => {
                 try {
@@ -268,19 +306,37 @@ TConModifierBuilderClass.prototype = {
     },
     build: function() {
         if (!registeredModifiers[this.modifierId]) {
+            let outerThis = this;
             let built = modifiersRegistry.register(this.modifierId, () => new BaseModifierClass((hooksBuilder) => {
-                let methodGroup = this.methods
-                if (methodGroup.onInventoryTick) {
-                    hooksBuilder.addHook(new JavaAdapter($InventoryTickModifierHook, {
-                        onInventoryTick: (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) =>
-                            this.methods.onInventoryTick(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-                    }), $ModifierHooks.INVENTORY_TICK);
-                }
+                let methodGroup = this.methods;
                 if (methodGroup.modifyStat) {
                     hooksBuilder.addHook(new JavaAdapter($ConditionalStatModifierHook, {
-                        modifyStat: (arg0, arg1, arg2, arg3, arg4, arg5) =>
-                            this.methods.modifyStat(arg0, arg1, arg2, arg3, arg4, arg5)
+                        modifyStat: function(arg0, arg1, arg2, arg3, arg4, arg5) {
+                            return outerThis.methods.modifyStat(arg0, arg1, arg2, arg3, arg4, arg5)
+                        }
                     }), $ModifierHooks.CONDITIONAL_STAT);
+                }
+                // TODO: TOOL_ACTION
+                if (methodGroup.onEquip) {
+                    hooksBuilder.addHook($Context.jsToJava(context, {
+                        onEquip: function (arg0, arg1, arg2) {
+                            console.info("I'm called")
+                            outerThis.methods.onEquip(arg0, arg1, arg2);
+                        },
+                        onUnequip: function(arg0, arg1, arg2) {
+                            outerThis.methods.onUnequip(arg0, arg1, arg2);
+                        },
+                        onEquipmentChange: function (arg0, arg1, arg2, arg3) {
+                            outerThis.methods.onEquipmentChange(arg0, arg1, arg2, arg3);
+                        }
+                    }, $EquipmentChangeModifierHook), $ModifierHooks.EQUIPMENT_CHANGE);
+                }
+                if (methodGroup.onInventoryTick) {
+                    hooksBuilder.addHook(new JavaAdapter($InventoryTickModifierHook, {
+                        onInventoryTick: function (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
+                            outerThis.methods.onInventoryTick(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+                        }
+                    }), $ModifierHooks.INVENTORY_TICK);
                 }
             }));
             registeredModifiers[this.modifierId] = built;

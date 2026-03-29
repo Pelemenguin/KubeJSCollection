@@ -15,12 +15,14 @@ namespace Internal {
             type DefiningClassLoader = Internal.DefiningClassLoader;
 
             // Minecraft
+            /** `net.minecraft.world.entity.EquipmentSlot` */
+            type EquipmentSlot = Internal.EquipmentSlot;
             /** `net.minecraft.world.entity.LivingEntity` */
-            type LivingEntity = Internal.LivingEntity;
+            type LivingEntity  = Internal.LivingEntity;
             /** `net.minecraft.world.item.ItemStack` */
-            type ItemStack    = Internal.ItemStack;
+            type ItemStack     = Internal.ItemStack;
             /** `net.minecraft.world.level.Level` */
-            type Level        = Internal.Level;
+            type Level         = Internal.Level;
 
             // TConstruct
 
@@ -28,6 +30,8 @@ namespace Internal {
             type ModifierEntry                            = Internal.ModifierEntry;
             /** `slimeknights.tconstruct.library.modifiers.ModifierHooks` */
             type $ModifierHooks                    = typeof Internal.ModifierHooks;
+            /** `slimeknights.tconstruct.library.modifiers.hook.armor` */
+            type EquipmentChangeContext                   = Internal.EquipmentChangeContext;
             /** `slimeknights.tconstruct.library.modifiers.util.ModifierDeferredRegister` */
             type ModifierDeferredRegister                 = Internal.ModifierDeferredRegister;
             /** `slimeknights.tconstruct.library.modifiers.util.StaticModifier` */
@@ -86,28 +90,6 @@ namespace Internal {
              */
             static create(modifierId: string): TConModifierBuilder;
             /**
-             * Sets the `onInventoryTick` method.
-             * 
-             * This method is called every tick for a tool in the player's inventory.
-             * - - - - -
-             * @param callback The callback function
-             * @returns        The builder itself
-             * - - - - -
-             * @see {@linkcode TinkerFunctions.onInventoryTick onInventoryTick}
-             * - - - - -
-             * Example
-             * 
-             * ```javascript
-             * TConModifierJS.createModifier("test")
-             *     .onInventoryTick((tool, modifier, world, holder, itemSlot, isSelected, isCorrectSlot, stack) => {
-             *         if (!isSelected) return;
-             *         console.info("This gotta be so noisy to print every tick! So I'm now ticking only when held. Game tick: " + world.getTime().toFixed());
-             *     })
-             *     .build();
-             * ```
-             */
-            onInventoryTick(callback: TinkerFunctions["onInventoryTick"]): this;
-            /**
              * Sets the `modifyStat` method.
              * 
              * This method is called to get some stats (projectile power, draw speed, etc.) to calculate bonus or malus in real time.
@@ -144,6 +126,31 @@ namespace Internal {
              *     .build()
              */
             modifyStat(callback: TinkerFunctions["modifyStat"]): this;
+            onEquip(callback: TinkerFunctions["onEquip"]): this;
+            onUnequip(callback: TinkerFunctions["onUnequip"]): this;
+            onEquipmentChange(callback: TinkerFunctions["onEquipmentChange"]): this;
+            /**
+             * Sets the `onInventoryTick` method.
+             * 
+             * This method is called every tick for a tool in the player's inventory.
+             * - - - - -
+             * @param callback The callback function
+             * @returns        The builder itself
+             * - - - - -
+             * @see {@linkcode TinkerFunctions.onInventoryTick onInventoryTick}
+             * - - - - -
+             * Example
+             * 
+             * ```javascript
+             * TConModifierJS.createModifier("test")
+             *     .onInventoryTick((tool, modifier, world, holder, itemSlot, isSelected, isCorrectSlot, stack) => {
+             *         if (!isSelected) return;
+             *         console.info("This gotta be so noisy to print every tick! So I'm now ticking only when held. Game tick: " + world.getTime().toFixed());
+             *     })
+             *     .build();
+             * ```
+             */
+            onInventoryTick(callback: TinkerFunctions["onInventoryTick"]): this;
             /**
              * Build the modifier.
              * - - - - -
@@ -167,6 +174,52 @@ namespace Internal {
          */
         declare interface TinkerFunctions {
             /**
+             * Method to modify a stat as the tool is being used
+             * - - - - -
+             * @param tool         Tool instance
+             * @param modifier     Modifier instance
+             * @param living       Entity holding the tool
+             * @param stat         Stat to be modified, safe to do instance equality
+             * @param baseValue    Value before this hook modified the stat
+             * @param multiplier   Global multiplier, same value contained in the tool, but fetched for convenience as it's commonly needed for stat bonuses
+             * @return             New value of the stat, or baseValue if you choose not to modify this stat
+             */
+            modifyStat?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, living: Alias.LivingEntity, stat: Alias.FloatToolStat, baseValue: number, multiplier: number): number;
+            /**
+             * Called when a tinker tool is equipped to an entity
+             * - - - - -
+             * @param tool         Tool equipped
+             * @param modifier     Level of the modifier
+             * @param context      Context about the event
+             * - - - - -
+             * @see {@linkcode onUnequip}
+             * @see {@linkcode onEquipmentChange}
+             */
+            onEquip?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, context: Alias.EquipmentChangeContext): void;
+            /**
+             * Called when a tinker tool is unequipped from an entity
+             * - - - - -
+             * @param tool         Tool unequipped
+             * @param modifier     Level of the modifier
+             * @param context      Context about the event
+             * - - - - -
+             * @see {@linkcode onEquip}
+             * @see {@linkcode onEquipmentChange}
+             */
+            onUnequip?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, context: Alias.EquipmentChangeContext): void;
+            /**
+             * Called when a stack in a different slot changed. Not called on the slot that changed
+             * - - - - -
+             * @param tool      Tool instance
+             * @param modifier  Level of the modifier
+             * @param context   Context describing the change
+             * @param slotType  Slot containing this tool, did not change
+             * - - - - -
+             * @see {@linkcode onEquip}
+             * @see {@linkcode onUnequip}
+             */
+            onEquipmentChange?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, context: Alias.EquipmentChangeContext, slotType: Alias.EquipmentSlot): void;
+            /**
              * Called when the stack updates in the player inventory
              * - - - - -
              * @param tool             Current tool instance
@@ -179,18 +232,6 @@ namespace Internal {
              * @param stack            Item stack instance to check other slots for the tool. Do not modify
              */
             onInventoryTick?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, world: Alias.Level, holder: Alias.LivingEntity, itemSlot: number, isSelected: boolean, isCorrectSlot: boolean, stack: Alias.ItemStack): void;
-            /**
-             * Method to modify a stat as the tool is being used
-             * - - - - -
-             * @param tool         Tool instance
-             * @param modifier     Modifier instance
-             * @param living       Entity holding the tool
-             * @param stat         Stat to be modified, safe to do instance equality
-             * @param baseValue    Value before this hook modified the stat
-             * @param multiplier   Global multiplier, same value contained in the tool, but fetched for convenience as it's commonly needed for stat bonuses
-             * @return             New value of the stat, or baseValue if you choose not to modify this stat
-             */
-            modifyStat?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, living: Alias.LivingEntity, stat: Alias.FloatToolStat, baseValue: number, multiplier: number): number;
         }
     }
 

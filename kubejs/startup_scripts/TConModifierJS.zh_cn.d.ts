@@ -15,12 +15,14 @@ namespace Internal {
             type DefiningClassLoader = Internal.DefiningClassLoader;
 
             // Minecraft
+            /** `net.minecraft.world.entity.EquipmentSlot` */
+            type EquipmentSlot = Internal.EquipmentSlot;
             /** `net.minecraft.world.entity.LivingEntity` */
-            type LivingEntity = Internal.LivingEntity;
+            type LivingEntity  = Internal.LivingEntity;
             /** `net.minecraft.world.item.ItemStack` */
-            type ItemStack    = Internal.ItemStack;
+            type ItemStack     = Internal.ItemStack;
             /** `net.minecraft.world.level.Level` */
-            type Level        = Internal.Level;
+            type Level         = Internal.Level;
 
             // 匠魂
 
@@ -28,6 +30,8 @@ namespace Internal {
             type ModifierEntry                            = Internal.ModifierEntry;
             /** `slimeknights.tconstruct.library.modifiers.ModifierHooks` */
             type $ModifierHooks                    = typeof Internal.ModifierHooks;
+            /** `slimeknights.tconstruct.library.modifiers.hook.armor` */
+            type EquipmentChangeContext                   = Internal.EquipmentChangeContext;
             /** `slimeknights.tconstruct.library.modifiers.util.ModifierDeferredRegister` */
             type ModifierDeferredRegister                 = Internal.ModifierDeferredRegister;
             /** `slimeknights.tconstruct.library.modifiers.util.StaticModifier` */
@@ -40,6 +44,7 @@ namespace Internal {
             type FloatToolStat                            = Internal.FloatToolStat;
             /** `slimeknights.tconstruct.library.tools.stat.ToolStats` */
             type ToolStats                                = Internal.ToolStats;
+            type $ToolStats                        = typeof Internal.ToolStats;
 
         }
 
@@ -85,28 +90,6 @@ namespace Internal {
              */
             static create(modifierId: string): TConModifierBuilder;
             /**
-             * 设置 `onInventoryTick` 方法。
-             * 
-             * 对于每个拥有该强化的在玩家物品栏中工具，这个方法每游戏刻会调用一次。
-             * - - - - -
-             * @param callback 回调函数
-             * @returns        Builder 本身
-             * - - - - -
-             * @see {@linkcode TinkerFunctions.onInventoryTick onInventoryTick}
-             * - - - - -
-             * 示例
-             * 
-             * ```javascript
-             * TConModifierJS.createModifier("test")
-             *     .onInventoryTick((tool, modifier, world, holder, itemSlot, isSelected, isCorrectSlot, stack) => {
-             *         if (!isSelected) return;
-             *         console.info("太吵了！每个游戏刻都输出一次！所以我选择只在手持时输出，现在游戏刻数：" + world.getTime().toFixed());
-             *     })
-             *     .build();
-             * ```
-             */
-            onInventoryTick(callback: TinkerFunctions["onInventoryTick"]): this;
-            /**
              * 设置 `modifyStat` 方法。
              * 
              * 该方法在部分数值（例如弹射物力量、拉弓速度等）计算时实时调用以获取加成或削弱。
@@ -144,6 +127,31 @@ namespace Internal {
              */
             modifyStat(callback: TinkerFunctions["modifyStat"]): this;
             /**
+             * 设置 `onInventoryTick` 方法。
+             * 
+             * 对于每个拥有该强化的在玩家物品栏中工具，这个方法每游戏刻会调用一次。
+             * - - - - -
+             * @param callback 回调函数
+             * @returns        Builder 本身
+             * - - - - -
+             * @see {@linkcode TinkerFunctions.onInventoryTick onInventoryTick}
+             * - - - - -
+             * 示例
+             * 
+             * ```javascript
+             * TConModifierJS.createModifier("test")
+             *     .onInventoryTick((tool, modifier, world, holder, itemSlot, isSelected, isCorrectSlot, stack) => {
+             *         if (!isSelected) return;
+             *         console.info("太吵了！每个游戏刻都输出一次！所以我选择只在手持时输出，现在游戏刻数：" + world.getTime().toFixed());
+             *     })
+             *     .build();
+             * ```
+             */
+            onInventoryTick(callback: TinkerFunctions["onInventoryTick"]): this;
+            onEquip(callback: TinkerFunctions["onEquip"]): this;
+            onUnequip(callback: TinkerFunctions["onUnequip"]): this;
+            onEquipmentChange(callback: TinkerFunctions["onEquipmentChange"]): this;
+            /**
              * 构建该强化。
              * - - - - -
              * @returns 一个 `StaticModifier` 对象
@@ -166,6 +174,52 @@ namespace Internal {
          */
         declare interface TinkerFunctions {
             /**
+             * 用于更改工具使用时的数据的方法
+             * - - - - -
+             * @param tool         工具实例
+             * @param modifier     强化实例
+             * @param living       手持工具的实体
+             * @param stat         要更改的数据，可以安全地进行实例比较
+             * @param baseValue    该钩子方法修改之前的数据
+             * @param multiplier   全局系数，工具中包含了相同的数值，但由于其广泛被额外数值奖励需要，这里为了便利而直接提供
+             * @return             特性的新数值，或者在不想修改数值时返回 `baseValue`
+             */
+            modifyStat?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, living: Alias.LivingEntity, stat: Alias.FloatToolStat, baseValue: number, multiplier: number): number;
+            /**
+             * 当一个匠魂工具装备到一个实体上时调用
+             * - - - - -
+             * @param tool         装备的工具
+             * @param modifier     特性等级
+             * @param context      事件上下文
+             * - - - - -
+             * @see {@linkcode onUnequip}
+             * @see {@linkcode onEquipmentChange}
+             */
+            onEquip?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, context: Alias.EquipmentChangeContext): void;
+            /**
+             * 当一个匠魂工具从一个实体上取消装备的时候调用
+             * - - - - -
+             * @param tool         装备的工具
+             * @param modifier     特性等级
+             * @param context      事件上下文
+             * - - - - -
+             * @see {@linkcode onEquip}
+             * @see {@linkcode onEquipmentChange}
+             */
+            onUnequip?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, context: Alias.EquipmentChangeContext): void;
+            /**
+             * 当另一个栏位中的物品变更时调用。不在变更的栏位上调用
+             * - - - - -
+             * @param tool      工具实例
+             * @param modifier  特性等级
+             * @param context   描述变化的上下文
+             * @param slotType  包含工具的栏位，并未变更
+             * - - - - -
+             * @see {@linkcode onEquip}
+             * @see {@linkcode onUnequip}
+             */
+            onEquipmentChange?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, context: Alias.EquipmentChangeContext, slotType: Alias.EquipmentSlot): void;
+            /**
              * 在玩家物品栏中的物品更新时调用
              * - - - - -
              * @param tool             当前工具实例
@@ -178,18 +232,6 @@ namespace Internal {
              * @param stack            物品堆叠实例，用于检查工具的其它栏位。不要更改
              */
             onInventoryTick?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, world: Alias.Level, holder: Alias.LivingEntity, itemSlot: number, isSelected: boolean, isCorrectSlot: boolean, stack: Alias.ItemStack): void;
-            /**
-             * 用于更改工具使用时的数据的方法
-             * - - - - -
-             * @param tool         工具实例
-             * @param modifier     强化实例
-             * @param living       手持工具的实体
-             * @param stat         要更改的数据，可以安全地进行实例比较
-             * @param baseValue    该钩子方法修改之前的数据
-             * @param multiplier   全局系数，工具中包含了相同的数值，但由于其广泛被额外数值奖励需要，这里为了便利而直接提供
-             * @return             特性的新数值，或者在不想修改数值时返回 `baseValue`
-             */
-            modifyStat?(tool: Alias.IToolStackView, modifier: Alias.ModifierEntry, living: Alias.LivingEntity, stat: Alias.FloatToolStat, baseValue: number, multiplier: number): number;
         }
     }
 
@@ -252,7 +294,7 @@ declare interface TConModifierJS {
      * 匠魂将其所有的内置工具数据类型以静态字段储存在这个类中。
      * 由于这些工具数据类型实例时全局唯一的，你可以放心使用 `==` 甚至 `===` 而无需使用 `equals` 方法。
      */
-    ToolStats: typeof Internal.pelemenguin$TConModifierJS.Alias.ToolStats;
+    ToolStats: Internal.pelemenguin$TConModifierJS.Alias.$ToolStats;
     /**
      * 创建一个自定义强化对象。
      * - - - - -
