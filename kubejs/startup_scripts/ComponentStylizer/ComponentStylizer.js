@@ -1,5 +1,7 @@
 // priority: 2147483647
 
+/// <reference path="ComponentStylizer.d.ts" />
+
 const ComponentStylizer = (() => {
 
 //#region - Bypass Class Filter
@@ -29,6 +31,12 @@ const $StringBuilder  = Java.loadClass("java.lang.StringBuilder");
 
 const $ChatFormatting = Java.loadClass("net.minecraft.ChatFormatting");
 const $Style          = Java.loadClass("net.minecraft.network.chat.Style");
+
+//#endregion
+
+//#region - Lazy Component
+
+
 
 //#endregion
 

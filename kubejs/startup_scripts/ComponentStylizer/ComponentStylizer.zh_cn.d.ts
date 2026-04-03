@@ -146,3 +146,5 @@ declare namespace ComponentStylizer {
     const ChatFormatting: Alias.$ChatFormatting;
 
 }
+
+declare const ComponentStylizer: ComponentStylizer;

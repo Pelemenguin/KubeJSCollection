@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-declare namespace ComponentStylizer {
+namespace ComponentStylizer {
 
     /**
      * Pre-defined aliases for documentation.
@@ -147,3 +147,5 @@ declare namespace ComponentStylizer {
     const ChatFormatting: Alias.$ChatFormatting;
 
 }
+
+declare const ComponentStylizer: ComponentStylizer;
