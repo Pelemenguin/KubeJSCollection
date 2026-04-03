@@ -36,7 +36,39 @@ const $Style          = Java.loadClass("net.minecraft.network.chat.Style");
 
 //#region - Lazy Component
 
+/** @type {typeof ComponentStylizer.LazyComponent} */
+let LazyComponentClass = function (component, stylizer) {
+    this.cachedString = undefined;
+    this.cachedResult = undefined;
+    this.rawComponent = component;
+    this.stylizer = stylizer;
+}
 
+/** @type {ComponentStylizer.LazyComponent} */
+LazyComponentClass.prototype = {
+    get: function () {
+        let curString = this.rawComponent.getString();
+        if (curString != this.cachedString || this.cachedResult == undefined) {
+            this.cachedResult = this.stylizer.transform(curString);
+            this.cachedString = curString;
+        }
+        return this.cachedResult;
+    },
+    clearCache: function () {
+        this.cachedResult = undefined;
+        this.cachedString = undefined;
+    },
+    refreshAndGet: function () {
+        let str = this.rawComponent.getString();
+        this.cachedResult = this.stylizer.transform(str);
+        this.cachedString = str;
+        return this.cachedResult;
+    }
+};
+
+LazyComponentClass.of = function (component, stylizer) {
+    return new LazyComponentClass(component, stylizer);
+}
 
 //#endregion
 
@@ -129,9 +161,11 @@ EmphasizerClass.create = function(emphStyle, defaultStyle) {
 
 /** @type {typeof ComponentStylizer} */
 const exported = {
+    LazyComponent: LazyComponentClass,
+    Stylizer: StylizerClass,
     Emphasizer: EmphasizerClass,
     Style: $Style,
-    ChatFormatting: $ChatFormatting
+    ChatFormatting: $ChatFormatting,
 };
 
 return exported;

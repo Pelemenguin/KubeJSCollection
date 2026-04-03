@@ -22,6 +22,90 @@ namespace ComponentStylizer {
     }
 
     /**
+     * `LazyComponent` handles the invocation of {@linkcode Stylizer.transform}.
+     * 
+     * The `transform` method involves text parsing and its implementation may vary across different `Stylizer` subclasses.
+     * Therefore, the `transform` method can be time-consuming and may cause lag in high-frequency call scenarios.
+     * 
+     * `LazyComponent` caches and reuses the `Component` produced by the `Stylizer`,
+     * avoiding performance waste from repeated transformations.
+     * 
+     * However, `LazyComponent` refreshes its cache when the **text of the `Component` changes**.
+     * This is designed to account for players switching game languages.
+     * Hence, `LazyComponent` is not very effective for `Component`s whose text changes frequently.
+     * 
+     * ## Usage
+     * 
+     * `LazyComponent` can be created via its constructor or the {@linkcode of} method:
+     * 
+     * > ```javascript
+     * > let emphasizer = ComponentStylizer.Emphasizer.create();
+     * > let lazy = ComponentStylizer.LazyComponent.of(Component.literal("This is a _emph_ test!"), emphasizer);
+     * > // or
+     * > // let lazy = new ComponentStylizer.LazyComponent(Component.literal("..."), emphasizer);
+     * > ```
+     * 
+     * To obtain the transformed `Component`, use the {@linkcode get} method:
+     * 
+     * > ```javascript
+     * > let component = lazy.get();
+     * > if (Client.player) {
+     * >     Client.player.tell(component);
+     * > }
+     * > ```
+     * 
+     * To refresh the cache, use {@linkcode clearCache} to discard the previously obtained result,
+     * so that the next `get` call recomputes it.
+     * 
+     * Alternatively, use {@linkcode refreshAndGet}, which also clears the cache
+     * but recomputes immediately and returns the result, rather than waiting for the next `get` call.
+     * 
+     * > ```javascript
+     * > lazy.clearCache();
+     * > lazy.get();           // recomputes here
+     * > 
+     * > lazy.refreshAndGet(); // recomputes immediately
+     * > ````
+     */
+    class LazyComponent {
+        /**
+         * Constructs a new `LazyComponent`.
+         * 
+         * @param component The `Component` to transform
+         * @param stylizer  The `Stylizer` to use
+         */
+        constructor(component: Alias.Component, stylizer: Stylizer);
+        protected cachedString: string;
+        protected cachedResult: Alias.Component;
+        protected rawComponent: Alias.Component;
+        protected stylizer: Stylizer;
+        /**
+         * Creates a new `LazyComponent`.
+         * 
+         * @param component The `Component` to transform
+         * @param stylizer  The `Stylizer` to use
+         * @returns         The created `LazyComponent`
+         */
+        static of(component: Alias.Component, stylizer: Stylizer): LazyComponent;
+        /**
+         * Gets the transformed result.
+         * 
+         * @returns The result
+         */
+        get(): Alias.Component;
+        /**
+         * Clears the cache without immediate recomputation.
+         */
+        clearCache(): void;
+        /**
+         * Clears the cache and immediately recomputes the result.
+         * 
+         * @returns The transformed result
+         */
+        refreshAndGet(): Alias.Component;
+    }
+
+    /**
      * `Stylizer` is an abstract base class that specifies a `transform` method used to convert a string into a `Component` with a custom style.
      */
     abstract class Stylizer {
@@ -52,24 +136,24 @@ namespace ComponentStylizer {
      * 
      * Use the constructor or the `create` method to create an `Emphasizer`.
      * 
-     * ```javascript
-     * // An default Emphasizer
-     * let emphasizer1 = new ComponentStylizer.Emphasizer();
-     * 
-     * // Another default Emphasizer
-     * let emphasizer2 = ComponentStylizer.Emphasizer.create();
-     * 
-     * // An Emphasizer with a specified emphStyle
-     * let emphasizer3 = ComponentStylizer.Emphasizer.create(
-     *     ComponentStylizer.Style.EMPTY.withBold(true).applyFormat("red")
-     * );
-     * 
-     * // An Emphasizer with emphStyle and defaultStyle both set
-     * let emphasizer4 = ComponentStylizer.Emphasizer.create(
-     *     ComponentStylizer.Style.EMPTY.withItalic(true).applyFormat("green"),
-     *     ComponentStylizer.Style.EMPTY.applyFormat("gray")
-     * );
-     * ```
+     * > ```javascript
+     * > // An default Emphasizer
+     * > let emphasizer1 = new ComponentStylizer.Emphasizer();
+     * > 
+     * > // Another default Emphasizer
+     * > let emphasizer2 = ComponentStylizer.Emphasizer.create();
+     * > 
+     * > // An Emphasizer with a specified emphStyle
+     * > let emphasizer3 = ComponentStylizer.Emphasizer.create(
+     * >     ComponentStylizer.Style.EMPTY.withBold(true).applyFormat("red")
+     * > );
+     * > 
+     * > // An Emphasizer with emphStyle and defaultStyle both set
+     * > let emphasizer4 = ComponentStylizer.Emphasizer.create(
+     * >     ComponentStylizer.Style.EMPTY.withItalic(true).applyFormat("green"),
+     * >     ComponentStylizer.Style.EMPTY.applyFormat("gray")
+     * > );
+     * > ```
      */
     class Emphasizer extends Stylizer {
         /**
@@ -103,12 +187,12 @@ namespace ComponentStylizer {
      * 
      * To create a `Style` object, you can start with `ComponentStylizer.Style.EMPTY` and then use the `withXxx()` methods to modify it.
      * 
-     * ```javascript
-     * // Creates a bold blue style.
-     * ComponentStylizer.Style.EMPTY
-     *     .withBold(true)
-     *     .applyFormat("red")
-     * ```
+     * > ```javascript
+     * > // Creates a bold blue style.
+     * > ComponentStylizer.Style.EMPTY
+     * >     .withBold(true)
+     * >     .applyFormat("red")
+     * > ```
      * 
      * Note that `Style`s are **immutable**, any `withXxx()` method will return a new `Style` object instead of modifying the original one.
      */
@@ -123,26 +207,26 @@ namespace ComponentStylizer {
      * 
      * Here are some examples:
      * 
-     * ```javascript
-     * // Colors
-     * ComponentStylizer.ChatFormatting.RED;
-     * ComponentStylizer.ChatFormatting.GREEN;
-     * ComponentStylizer.ChatFormatting.BLUE;
-     * ComponentStylizer.ChatFormatting.LIGHT_PURPLE;
-     * 
-     * // Other formats
-     * ComponentStylizer.ChatFormatting.BOLD;
-     * ComponentStylizer.ChatFormatting.ITALIC;
-     * ComponentStylizer.ChatFormatting.UNDERLINE;
-     * ```
+     * > ```javascript
+     * > // Colors
+     * > ComponentStylizer.ChatFormatting.RED;
+     * > ComponentStylizer.ChatFormatting.GREEN;
+     * > ComponentStylizer.ChatFormatting.BLUE;
+     * > ComponentStylizer.ChatFormatting.LIGHT_PURPLE;
+     * > 
+     * > // Other formats
+     * > ComponentStylizer.ChatFormatting.BOLD;
+     * > ComponentStylizer.ChatFormatting.ITALIC;
+     * > ComponentStylizer.ChatFormatting.UNDERLINE;
+     * > ```
      * 
      * Since `ChatFormatting` is an enum class, sometimes you can directly use strings instead of directly accessing static fields,
      * and Rhino can help you convert them.
      * 
-     * ```java
-     * ComponentStylizer.Style.EMPTY.applyFormat("red");
-     * ComponentStylizer.Style.EMPTY.applyFormat(ComponentStylizer.ChatFormatting.RED);
-     * ```
+     * > ```javascript
+     * > ComponentStylizer.Style.EMPTY.applyFormat("red");
+     * > ComponentStylizer.Style.EMPTY.applyFormat(ComponentStylizer.ChatFormatting.RED);
+     * > ```
      */
     const ChatFormatting: Alias.$ChatFormatting;
 
