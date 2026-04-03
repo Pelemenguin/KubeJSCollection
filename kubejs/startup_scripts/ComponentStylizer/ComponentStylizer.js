@@ -1,6 +1,5 @@
 // priority: 2147483647
 
-/** @type {ComponentStylizer} */
 const ComponentStylizer = (() => {
 
 //#region - Bypass Class Filter
@@ -24,65 +23,109 @@ const loadSpecial = (className) => {
 
 //#endregion
 
-const $ArrayDeque = Java.loadClass("java.util.ArrayDeque");
-
 //#region - Load Java Classes
 
-const $Style = Java.loadClass("net.minecraft.network.chat.Style");
+const $StringBuilder  = Java.loadClass("java.lang.StringBuilder");
+
+const $ChatFormatting = Java.loadClass("net.minecraft.ChatFormatting");
+const $Style          = Java.loadClass("net.minecraft.network.chat.Style");
 
 //#endregion
 
-//#region - Helper parser
+//#region - Abstract Stylizer
 
+/** @type {typeof ComponentStylizer.Stylizer} */
+let StylizerClass = function () {
+    throw new Error("Stylizer is an abstract class and cannot be instantiated directly.");
+};
 
+/** @type {ComponentStylizer.Stylizer} */
+StylizerClass.prototype = {
+    transform: function (text) {
+        throw new Error("Method 'transform' must be implemented by subclasses of Stylizer.");
+    }
+};
 
 //#endregion
 
-//#region - ComponentStylizer Implementation
+//#region - Stylizer Implementations
 
-/** @type {typeof Internal.pelemenguin$ComponentStylizer.Emphasizer} */
+/** @type {typeof ComponentStylizer.Emphasizer} */
 let EmphasizerClass = function () {
     this.defaultStyle = $Style.EMPTY;
     this.emphStyle = $Style.EMPTY.withBold(true);
     this.emphCharacter = "_";
 };
 
-/** @type {Internal.pelemenguin$ComponentStylizer.Emphasizer} */
+Object.setPrototypeOf(EmphasizerClass.prototype, StylizerClass.prototype);
+
+/**
+ * @type {ComponentStylizer.Emphasizer}
+ */
 EmphasizerClass.prototype = {
-    transform: function (input) {
-        let rawString = input.getString();
-        if (rawString.length() == 0) {
-            return Component.literal(rawString);
+    transform: function (text) {
+        text = "" + text; // There is a chance that the text could be a Java string, where `length` is a method
+        if (text.length == 0) {
+            return Component.literal(text);
         }
         let result = Component.literal("");
         let isEmph = false;
         let curIndex = 0;
-        while (curIndex < rawString.length()) {
-            let nextSymb = rawString.indexOf(this.emphCharacter, curIndex);
-            let part;
-            if (nextSymb == -1) {
-                part = rawString.substring(curIndex);
+        let curBuilder = new $StringBuilder();
+        while (curIndex < text.length) {
+            let cur = text.charAt(curIndex);
+            if (cur == "\\") {
+                if (curIndex < text.length - 1) {
+                    curBuilder.append(text.charAt(curIndex + 1));
+                    curIndex += 2;
+                }
+            } else if (cur == this.emphCharacter) {
+                let style = isEmph ? this.emphStyle : this.defaultStyle;
+                result.append(Component.literal(curBuilder.toString()).setStyle(style));
+                curBuilder.setLength(0);
+                isEmph = !isEmph;
+                curIndex++;
             } else {
-                part = rawString.substring(curIndex, nextSymb);
-            }
-            let child = Component.literal(part).setStyle(isEmph ? this.emphStyle : this.defaultStyle);
-            result.append(child);
-            isEmph = !isEmph;
-            if (nextSymb == -1) {
-                break;
-            } else {
-                curIndex = nextSymb + 1;
+                curBuilder.append(cur);
+                curIndex++;
             }
         }
+        if (curBuilder.length() > 0) {
+            let style = isEmph ? this.emphStyle : this.defaultStyle;
+            result.append(Component.literal(curBuilder.toString()).setStyle(style));
+        }
         return result;
+    },
+    setEmphStyle: function (style) {
+        this.emphStyle = style;
+        return this;
+    },
+    setDefaultStyle: function (style) {
+        this.defaultStyle = style;
+        return this;
     }
 };
 
+EmphasizerClass.create = function(emphStyle, defaultStyle) {
+    let created = new EmphasizerClass();
+    if (emphStyle != undefined) {
+        created.setEmphStyle(emphStyle);
+    }
+    if (defaultStyle != undefined) {
+        created.setDefaultStyle(defaultStyle);
+    }
+    return created;
+}
+
 //#endregion
 
-/** @type {ComponentStylizer} */
+/** @type {typeof ComponentStylizer} */
 const exported = {
-    Emphasizer: EmphasizerClass
+    Emphasizer: EmphasizerClass,
+    Style: $Style,
+    ChatFormatting: $ChatFormatting
 };
+
+return exported;
 
 })();
