@@ -5,8 +5,12 @@
 const RegCmd = (() => {
 
 const $Integer = Java.loadClass("java.lang.Integer");
+const $Long    = Java.loadClass("java.lang.Long");
 
+const $FloatArgumentType   = Java.loadClass("com.mojang.brigadier.arguments.FloatArgumentType");
+const $DoubleArgumentType  = Java.loadClass("com.mojang.brigadier.arguments.DoubleArgumentType");
 const $IntegerArgumentType = Java.loadClass("com.mojang.brigadier.arguments.IntegerArgumentType");
+const $LongArgumentType    = Java.loadClass("com.mojang.brigadier.arguments.LongArgumentType");
 
 /** @type {RegCmd.CmdBuilder[]} */
 const ALL_BUILDERS = [];
@@ -94,6 +98,72 @@ let exported = {
                 getType: () => $IntegerArgumentType.integer(),
                 getValue: (context, argName) => context.getArgument(argName, $Integer)
             }
+        },
+        integerBetween: (min, max) => {
+            return {
+                getType: () => $IntegerArgumentType.integer(min, max),
+                getValue: (context, argName) => $IntegerArgumentType.getInteger(context, argName)
+            };
+        },
+        integerAbove: (min) => {
+            return RegCmd.ArgTypes.integerBetween(min, $Integer.MAX_VALUE);
+        },
+        integerBelow: (max) => {
+            return RegCmd.ArgTypes.integerBetween($Integer.MIN_VALUE, max);
+        },
+        long: () => {
+            return {
+                getType: () => $LongArgumentType.longArg(),
+                getValue: (context, argName) => $LongArgumentType.getLong(context, argName)
+            };
+        },
+        longBetween: (min, max) => {
+            return {
+                getType: () => $LongArgumentType.longArg(min, max),
+                getValue: (context, argName) => $LongArgumentType.getLong(context, argName)
+            };
+        },
+        longAbove: (min) => {
+            return RegCmd.ArgTypes.longBetween(min, $Long.MAX_VALUE);
+        },
+        longBelow: (max) => {
+            return RegCmd.ArgTypes.longBetween($Long.MIN_VALUE, max);
+        },
+        float: () => {
+            return {
+                getType: () => $FloatArgumentType.floatArg(),
+                getValue: (context, argName) => $FloatArgumentType.getFloat(context, argName)
+            };
+        },
+        floatBetween: (min, max) => {
+            return {
+                getType: () => $FloatArgumentType.floatArg(min, max),
+                getValue: (context, argName) => $FloatArgumentType.getFloat(context, argName)
+            };
+        },
+        floatAbove: (min) => {
+            return RegCmd.ArgTypes.floatBetween(min, Number.POSITIVE_INFINITY);
+        },
+        floatBelow: (max) => {
+            return RegCmd.ArgTypes.floatBetween(Number.NEGATIVE_INFINITY, max);
+        },
+        double: () => {
+            return {
+                getType: () => $DoubleArgumentType.doubleArg(),
+                getValue: (context, argName) => $DoubleArgumentType.getDouble(context, argName)
+            };
+        },
+        doubleBetween: (min, max) => {
+            return {
+                getType: () => $DoubleArgumentType.doubleArg(min, max),
+                getValue: (context, argName) => $DoubleArgumentType.getDouble(context, argName)
+            };
+        },
+        doubleAbove: (min) => {
+            return RegCmd.ArgTypes.doubleBetween(min, Number.POSITIVE_INFINITY);
+        },
+        doubleBelow: (max) => {
+            return RegCmd.ArgTypes.doubleBetween(Number.NEGATIVE_INFINITY, max);
         }
     }
 };

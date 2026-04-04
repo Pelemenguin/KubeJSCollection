@@ -38,7 +38,22 @@ declare namespace RegCmd {
     }
 
     namespace ArgTypes {
-        function integer(): CommandArgumentType<number>
+        function integer(): CommandArgumentType<number>;
+        function integerBetween(min: number, max: number): CommandArgumentType<number>
+        function integerAbove(min: number): CommandArgumentType<number>;
+        function integerBelow(max: number): CommandArgumentType<number>;
+        function long(): CommandArgumentType<number>;
+        function longBetween(min: number, max: number): CommandArgumentType<number>
+        function longAbove(min: number): CommandArgumentType<number>;
+        function longBelow(max: number): CommandArgumentType<number>;
+        function float(): CommandArgumentType<number>;
+        function floatBetween(min: number, max: number): CommandArgumentType<number>
+        function floatAbove(min: number): CommandArgumentType<number>;
+        function floatBelow(max: number): CommandArgumentType<number>;
+        function double(): CommandArgumentType<number>;
+        function doubleBetween(min: number, max: number): CommandArgumentType<number>
+        function doubleAbove(min: number): CommandArgumentType<number>;
+        function doubleBelow(max: number): CommandArgumentType<number>;
     }
 
     type CommandArgumentType<T> = {
