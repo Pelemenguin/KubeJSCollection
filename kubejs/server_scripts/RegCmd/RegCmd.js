@@ -80,6 +80,7 @@ let exported = {
     CmdBuilder: function(commandArguments) {
         this.commandArguments = commandArguments;
         this.executeFunction = () => 0;
+        this.requirementPredicate = () => true;
     }
 };
 
@@ -127,17 +128,50 @@ CmdBuilder.prototype.registerToEvent = function(event) {
         }
 
         if (last == null || last.optional) {
-            cur.forEach(a => a.executes(this.executeFunction));
+            cur.forEach(a => {
+                a
+                    .executes(this.executeFunction)
+            });
         }
 
         last = part;
     }
 
-    cur.forEach(a => event.register(a));
+    cur.forEach(a => {
+        a.requires(this.requirementPredicate);
+        event.register(a)
+    });
 }
 /** @type {RegCmd.CmdBuilder["executes"]} */
 CmdBuilder.prototype.executes = function(executeFunction) {
     this.executeFunction = executeFunction;
+    return this;
+}
+/** @type {RegCmd.CmdBuilder["requires"]} */
+CmdBuilder.prototype.requires = function(requirementFunction) {
+    let last = this.requirementPredicate;
+    this.requirementPredicate = (s) => requirementFunction(s) && last(s);
+    return this;
+}
+/** @type {RegCmd.CmdBuilder["requiresModerator"]} */
+CmdBuilder.prototype.requiresModerator = function() {
+    this.requires(s => s.hasPermission(1));
+    return this;
+}
+/** @type {RegCmd.CmdBuilder["requiresOperator"]} */
+CmdBuilder.prototype.requiresOperator = function() {
+    this.requires(s => s.hasPermission(2));
+    return this;
+}
+/** @type {RegCmd.CmdBuilder["requiresServerAdmin"]} */
+CmdBuilder.prototype.requiresAdmin = function() {
+    this.requires(s => s.hasPermission(3));
+    return this;
+}
+/** @type {RegCmd.CmdBuilder["requiresServerOwner"]} */
+CmdBuilder.prototype.requiresServerOwner = function() {
+    this.requires(s => s.hasPermission(4));
+    return this;
 }
 
 ServerEvents.commandRegistry(event => {

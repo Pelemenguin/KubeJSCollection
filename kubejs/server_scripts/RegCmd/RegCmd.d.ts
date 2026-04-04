@@ -7,7 +7,7 @@ declare namespace RegCmd {
         /** `com.mojang.brigadier.builder.ArgumentBuilder` */
         type ArgumentBuilder<S, T extends ArgumentBuilder<S, T>> = Internal.ArgumentBuilder<S, T>;
         /** `com.mojang.brigadier.context.CommandContext` */
-        type CommandContext<S>                                   = Internal.CommandContext;
+        type CommandContext<S>                                   = Internal.CommandContext<S>;
 
         /** `dev.latvian.mods.kubejs.command.CommandRegistryEventJS` */
         type CommandRegistryEventJS = Internal.CommandRegistryEventJS;
@@ -20,8 +20,14 @@ declare namespace RegCmd {
     class CmdBuilder {
         constructor(commandArguments: ParsedArgument[]);
         protected commandArguments: ParsedArgument[];
-        protected executeFunction: (arg0: Internal.CommandContext<Alias.CommandSourceStack>) => number;
+        protected executeFunction: (context: Alias.CommandContext<Alias.CommandSourceStack>) => number;
+        protected requirementPredicate: (context: Alias.CommandSourceStack) => boolean;
         executes(executeFunction: (context: Internal.CommandContext<Alias.CommandSourceStack>) => number): this;
+        requires(requirementPredicate: (context: Alias.CommandSourceStack) => boolean): this;
+        requiresModerator(): this;
+        requiresOperator(): this;
+        requiresServerAdmin(): this;
+        requiresServerOwner(): this;
         registerToEvent(event: Alias.CommandRegistryEventJS): void;
     }
     
