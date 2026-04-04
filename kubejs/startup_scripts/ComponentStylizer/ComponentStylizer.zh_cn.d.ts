@@ -110,11 +110,26 @@ declare namespace ComponentStylizer {
      */
     abstract class Stylizer {
         /**
-         * Transforms the given text.
+         * 转换指定的文本。
          * 
-         * @param text The input text
+         * @param text 输入文本
          */
         abstract transform(text: string): Alias.Component;
+        /**
+         * 使用该 `Stylizer` 创建一个 `Component.literal(text)` 的 {@linkcode LazyComponent}。
+         * 
+         * @param text 输入文本
+         * @returns    创建的 `LazyComponent`
+         */
+        literal(text: string): LazyComponent;
+        /**
+         * 使用该 `Stylizer` 创建一个 `Component.translatable(key, objects)` 的 {@linkcode LazyComponent}。
+         * 
+         * @param key     翻译键
+         * @param objects 替换文本
+         * @returns       创建的 `LazyComponent`
+         */
+        translatable(key: string, ...objects: any[]): LazyComponent;
     }
 
     /**

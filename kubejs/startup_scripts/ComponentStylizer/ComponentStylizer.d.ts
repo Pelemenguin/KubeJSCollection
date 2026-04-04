@@ -115,6 +115,21 @@ namespace ComponentStylizer {
          * @param text The input text
          */
         abstract transform(text: string): Alias.Component;
+        /**
+         * Creates a {@linkcode LazyComponent} of `Component.literal(text)` using this `Stylizer`.
+         * 
+         * @param text The input text
+         * @returns    The created `LazyComponent`
+         */
+        literal(text: string): LazyComponent;
+        /**
+         * Creates a {@linkcode LazyComponent} of `Component.translatable(key, objects)` using this `Stylizer`.
+         * 
+         * @param key     The translation key
+         * @param objects The objects to format into the translation string
+         * @returns       The created `LazyComponent`
+         */
+        translatable(key: string, ...objects: any[]): LazyComponent;
     }
 
     /**
