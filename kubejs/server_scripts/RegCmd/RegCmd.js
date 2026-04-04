@@ -4,6 +4,10 @@
 
 const RegCmd = (() => {
 
+const $Integer = Java.loadClass("java.lang.Integer");
+
+const $IntegerArgumentType = Java.loadClass("com.mojang.brigadier.arguments.IntegerArgumentType");
+
 /** @type {RegCmd.CmdBuilder[]} */
 const ALL_BUILDERS = [];
 
@@ -81,6 +85,16 @@ let exported = {
         this.commandArguments = commandArguments;
         this.executeFunction = () => 0;
         this.requirementPredicate = () => true;
+        this.args = {};
+        this.defaultValues = {};
+    },
+    ArgTypes: {
+        integer: () => {
+            return {
+                getType: () => $IntegerArgumentType.integer(),
+                getValue: (context, argName) => context.getArgument(argName, $Integer)
+            }
+        }
     }
 };
 
@@ -117,7 +131,9 @@ CmdBuilder.prototype.registerToEvent = function(event) {
                 break;
             }
             case "ARGUMENT": {
-                let created = Commands.argument(part.name, event.getArguments().INTEGER.create(event));
+                /** @type {RegCmd.CommandArgumentType<?>} */
+                let type = this.args[part.name];
+                let created = Commands.argument(part.name, type.getType());
                 cur.forEach(a => created.then(a));
                 cur = [created];
                 break;
@@ -129,8 +145,27 @@ CmdBuilder.prototype.registerToEvent = function(event) {
 
         if (last == null || last.optional) {
             cur.forEach(a => {
-                a
-                    .executes(this.executeFunction)
+                a.executes((context) => {
+                    let args = {};
+                    for (let arg in this.args) {
+                        /** @type {RegCmd.CommandArgumentType<?>} */
+                        let type = this.args[arg];
+                        let value;
+                        try {
+                            value = type.getValue(context, arg)
+                        } catch (e) {
+                            let def = this.defaultValues[arg];
+                            if (def == undefined) {
+                                value = undefined;
+                            } else {
+                                value = def()
+                            }
+                        }
+                        args[arg] = value;
+                    }
+                    Object.freeze(args);
+                    return this.executeFunction(context, args);
+                })
             });
         }
 
@@ -171,6 +206,16 @@ CmdBuilder.prototype.requiresAdmin = function() {
 /** @type {RegCmd.CmdBuilder["requiresServerOwner"]} */
 CmdBuilder.prototype.requiresServerOwner = function() {
     this.requires(s => s.hasPermission(4));
+    return this;
+}
+/** @type {RegCmd.CmdBuilder["paramType"]} */
+CmdBuilder.prototype.paramType = function(paramName, type) {
+    this.args[paramName] = type;
+    return this;
+}
+/** @type {RegCmd.CmdBuilder["paramDefault"]} */
+CmdBuilder.prototype.paramDefault = function(paramName, defaultValue) {
+    this.defaultValues[paramName] = defaultValue;
     return this;
 }
 

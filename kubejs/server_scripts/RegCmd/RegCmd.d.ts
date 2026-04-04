@@ -4,6 +4,8 @@ declare namespace RegCmd {
 
     namespace Alias {
 
+        /** `com.mojang.brigadier.arguments.ArgumentType` */
+        type ArgumentType<T>                                     = Internal.ArgumentType<T>;
         /** `com.mojang.brigadier.builder.ArgumentBuilder` */
         type ArgumentBuilder<S, T extends ArgumentBuilder<S, T>> = Internal.ArgumentBuilder<S, T>;
         /** `com.mojang.brigadier.context.CommandContext` */
@@ -17,20 +19,33 @@ declare namespace RegCmd {
 
     }
 
-    class CmdBuilder {
+    class CmdBuilder<P extends {[argName: string]: CommandArgumentType<?>}> {
         constructor(commandArguments: ParsedArgument[]);
         protected commandArguments: ParsedArgument[];
-        protected executeFunction: (context: Alias.CommandContext<Alias.CommandSourceStack>) => number;
+        protected executeFunction: (context: Alias.CommandContext<Alias.CommandSourceStack>, args: Readonly<{[argName in keyof P]: P[argName] extends CommandArgumentType<infer T> ? T : never}>) => number;
         protected requirementPredicate: (context: Alias.CommandSourceStack) => boolean;
-        executes(executeFunction: (context: Internal.CommandContext<Alias.CommandSourceStack>) => number): this;
+        protected args: P;
+        protected defaultValues: {[s in keyof P]: () => P[S] extends CommandArgumentType<infer T> ? T : never};
+        executes(executeFunction: (context: Alias.CommandContext<Alias.CommandSourceStack>, args: Readonly<{[argName in keyof P]: P[argName] extends CommandArgumentType<infer T> ? T : never}>) => number): this;
         requires(requirementPredicate: (context: Alias.CommandSourceStack) => boolean): this;
         requiresModerator(): this;
         requiresOperator(): this;
         requiresServerAdmin(): this;
         requiresServerOwner(): this;
+        paramType<S extends string, T>(paramName: S, type: CommandArgumentType<T>): CmdBuilder<P & {[s in S]: CommandArgumentType<T>}>
+        paramDefault<S extends keyof P>(paramName: S, defaultValue: () => P[S] extends CommandArgumentType<infer T> ? T : never): this;
         registerToEvent(event: Alias.CommandRegistryEventJS): void;
     }
-    
+
+    namespace ArgTypes {
+        function integer(): CommandArgumentType<number>
+    }
+
+    type CommandArgumentType<T> = {
+        getType(): Alias.ArgumentType<T>,
+        getValue(context: Alias.CommandContext<Alias.CommandSourceStack>, argName: string): T
+    };
+
     type ParsedArgument = ({
         type: "LITERAL",
         literal: string
@@ -43,7 +58,7 @@ declare namespace RegCmd {
     }) & {optional: boolean};
 
     function parseCommandUsage(usage: string): ParsedArgument[];
-    function defineCommand(usage: string): CmdBuilder;
+    function defineCommand(usage: string): CmdBuilder<{}>;
 
 }
 
