@@ -1,5 +1,87 @@
 // @ts-nocheck
 
+/*
+ * MIT License
+ * 
+ * Copyright (c) 2026 Pelemenguin
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+/**
+ * `ComponentStylizer` 是一个 KubeJS JavaScript 库，用于在 Minecraft 中方便地创建和转换文本组件（`Component`）以实现自定义的文本风格。
+ * 
+ * ## 使用
+ * 
+ * {@linkcode Stylizer} 是负责转换 `Component` 的抽象基类。
+ * 使用 {@linkcode Stylizer.transform} 方法可以直接转换一个字符串，并输出创建的风格化 `Component`。
+ * 
+ * > ```javascript
+ * > // 获取 stylizer 后
+ * > stylizer.transform("遵循特定格式的文本...");
+ * > ```
+ * 
+ * 但是每次转换可能会导致性能问题，尤其是在高频调用的场景下。
+ * 因此建议使用 {@linkcode Stylizer.literal} 或者 {@linkcode Stylizer.translatable} 来创建 {@linkcode LazyComponent}。
+ * 使用方式类似于 {@linkcode Component.literal} 与 {@linkcode Component.translatable}。
+ * 
+ * > ```javascript
+ * > stylizer.literal("等待转换的文本...");
+ * > stylizer.translatable("a.translation.key");
+ * > stylizer.translatable("another.translation.key", "要", "替换", "的", "文本");
+ * > ```
+ * 
+ * 然后，保留创建的 `LazyComponent`。之后使用 {@linkcode LazyComponent.get} 方法获取转换后的 `Component`。
+ * 这样做的好处是，`transform` 只会在第一次调用，后续使用缓存的结果，减少时间开销。
+ * 
+ * > ```javascript
+ * > let lazy = stylizer.literal("输入的文本");
+ * > 
+ * > if (Client.player) {
+ * >     Client.player.tell(lazy.get());
+ * > 
+ * >     // 后续的 get 不会重新计算
+ * >     Client.player.tell(lazy.get());
+ * > }
+ * > ```
+ * 
+ * @see {@linkcode Stylizer}
+ * @see {@linkcode LazyComponent}
+ * 
+ * ## 内置实现
+ * 
+ * - {@linkcode Emphasizer} - 简单的 `Stylizer`，用于强调一段被指定的字符包围的文本。例如默认情况下 `default _emph_` 会被转换至 “default **emph**”。
+ *     可以自定义默认文本与强调文本的风格
+ * 
+ * ## 类型定义
+ * 
+ * 由于在 Minecraft 1.20.1 版本上同时存在 ProbeJS 6 与 ProbeJS 7，
+ * 它们生成的类型定义文件格式大相径庭。
+ * 为了获得正确的类型提示，可以前往 {@linkcode Alias} 命名空间更改别名以匹配你自己的 ProbeJS 生成的类型定义。
+ * 
+ * - - - - -
+ * 
+ * @author Pelemenguin
+ * @version 1.0
+ * @license MIT
+ * @copyright Pelemenguin 2026
+ */
 declare namespace ComponentStylizer {
 
     /**
