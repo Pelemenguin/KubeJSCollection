@@ -198,14 +198,26 @@ EmphasizerClass.prototype.setDefaultStyle = function (style) {
     this.defaultStyle = style;
     return this;
 };
+/** @type {ComponentStylizer.Emphasizer["setEmphCharacter"]} */
+EmphasizerClass.prototype.setEmphCharacter = function (char) {
+    char = "" + char; // Convert Java String to JS string
+    if (char.length != 1) {
+        throw new Error("Emphasis character must be a single character. Got: " + char);
+    }
+    this.emphCharacter = char;
+    return this;
+}
 
-EmphasizerClass.create = function(emphStyle, defaultStyle) {
+EmphasizerClass.create = function(emphStyle, defaultStyle, emphCharacter) {
     let created = new EmphasizerClass();
     if (emphStyle != undefined) {
         created.setEmphStyle(emphStyle);
     }
     if (defaultStyle != undefined) {
         created.setDefaultStyle(defaultStyle);
+    }
+    if (emphCharacter != undefined) {
+        created.setDefaultStyle(emphCharacter);
     }
     return created;
 }

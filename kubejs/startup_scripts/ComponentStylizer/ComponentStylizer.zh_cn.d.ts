@@ -303,9 +303,16 @@ declare namespace ComponentStylizer {
      * >     ComponentStylizer.Style.EMPTY.withItalic(true).applyFormat("green"),
      * >     ComponentStylizer.Style.EMPTY.applyFormat("gray")
      * > );
+     * > 
+     * > // Use another character instead of `_` to identify emphasized text
+     * > let emphasizer5 = ComponentStylizer.Emphasizer.create(
+     * >     ComponentStylizer.Style.EMPTY.withItalic(true).applyFormat("green"),
+     * >     ComponentStylizer.Style.EMPTY.applyFormat("gray"),
+     * >     "*"
+     * > );
      * > ```
      */
-    class Emphasizer {
+    class Emphasizer extends Stylizer {
         /**
          * 构造一个新的 `Emphasizer`。
          */
@@ -313,7 +320,19 @@ declare namespace ComponentStylizer {
         protected defaultStyle: Alias.Style;
         protected emphStyle: Alias.Style;
         protected emphCharacter: string;
-        static create(emphStyle?: Alias.Style, defaultStyle?: Alias.Style): Emphasizer;
+        /**
+         * 创建一个新的 `Emphasizer`，并指定风格和字符。
+         * 
+         * 所有参数都是可选的；如果未提供，`Emphasizer` 将使用默认值。
+         * 
+         * @param emphStyle     强调文本的风格
+         * @param defaultStyle  默认文本的风格
+         * @param emphCharacter 用于标识强调文本的字符（默认为 `_`）
+         * @returns             创建的 `Emphasizer`
+         * 
+         * @throws {Error} 如果 `emphCharacter` 不是单个字符
+         */
+        static create(emphStyle?: Alias.Style, defaultStyle?: Alias.Style, emphCharacter?: string): Emphasizer;
         /**
          * 设置强调文本的风格。
          * 
@@ -328,6 +347,15 @@ declare namespace ComponentStylizer {
          * @returns `this`
          */
         setDefaultStyle(style: Alias.Style): this;
+        /**
+         * 设置用于标识强调文本的字符。
+         * 
+         * @param char 要设置的字符
+         * @returns `this`
+         * 
+         * @throws {Error} 如果输入不是单个字符
+         */
+        setEmphCharacter(char: string): this;
     }
 
     /**

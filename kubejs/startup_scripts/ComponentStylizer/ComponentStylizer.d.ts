@@ -303,9 +303,16 @@ declare namespace ComponentStylizer {
      * >     ComponentStylizer.Style.EMPTY.withItalic(true).applyFormat("green"),
      * >     ComponentStylizer.Style.EMPTY.applyFormat("gray")
      * > );
+     * > 
+     * > // Use another character instead of `_` to identify emphasized text
+     * > let emphasizer5 = ComponentStylizer.Emphasizer.create(
+     * >     ComponentStylizer.Style.EMPTY.withItalic(true).applyFormat("green"),
+     * >     ComponentStylizer.Style.EMPTY.applyFormat("gray"),
+     * >     "*"
+     * > );
      * > ```
      */
-    class Emphasizer {
+    class Emphasizer extends Stylizer {
         /**
          * Constructs a new `Emphasizer`.
          */
@@ -313,7 +320,19 @@ declare namespace ComponentStylizer {
         protected defaultStyle: Alias.Style;
         protected emphStyle: Alias.Style;
         protected emphCharacter: string;
-        static create(emphStyle?: Alias.Style, defaultStyle?: Alias.Style): Emphasizer;
+        /**
+         * Creates a new `Emphasizer` with the specified styles and character.
+         * 
+         * All parameters are optional; if not provided, the `Emphasizer` will use default values.
+         * 
+         * @param emphStyle     The style for emphasized text
+         * @param defaultStyle  The style for default text
+         * @param emphCharacter The character used to identify emphasized text (default is `_`)
+         * @returns             The created `Emphasizer`
+         * 
+         * @throws {Error} If `emphCharacter` is not a single character
+         */
+        static create(emphStyle?: Alias.Style, defaultStyle?: Alias.Style, emphCharacter?: string): Emphasizer;
         /**
          * Sets the style for emphasized text.
          * 
@@ -328,6 +347,15 @@ declare namespace ComponentStylizer {
          * @returns `this`
          */
         setDefaultStyle(style: Alias.Style): this;
+        /**
+         * Sets the character used to identify emphasized text.
+         * 
+         * @param char The char to set
+         * @returns `this`
+         * 
+         * @throws {Error} If the input is not a single character
+         */
+        setEmphCharacter(char: string): this;
     }
 
     /**
