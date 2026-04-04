@@ -30,22 +30,24 @@ const ComponentStylizer = (() => {
 
 //#region - Bypass Class Filter
 
-const $NativeJavaClass = Java.loadClass("dev.latvian.mods.rhino.NativeJavaClass");
-const $KubeJS = Java.loadClass("dev.latvian.mods.kubejs.KubeJS");
-const $Context = Java.loadClass("dev.latvian.mods.rhino.Context");
-const context = $Context.enter();
-const scope = {};
+// Currently don't need that
 
-/** @type {Internal.Method} */
-const $Class_forName = Java.getClass().getClass().getMethod("forName", Java.loadClass("java.lang.String"));
+// const $NativeJavaClass = Java.loadClass("dev.latvian.mods.rhino.NativeJavaClass");
+// const $KubeJS = Java.loadClass("dev.latvian.mods.kubejs.KubeJS");
+// const $Context = Java.loadClass("dev.latvian.mods.rhino.Context");
+// const context = $Context.enter();
+// const scope = {};
 
-/**
- * @param {string} className 
- * @returns {typeof any}
- */
-const loadSpecial = (className) => {
-    return new $NativeJavaClass(context, scope, $Class_forName.invoke(null, className));
-}
+// /** @type {Internal.Method} */
+// const $Class_forName = Java.getClass().getClass().getMethod("forName", Java.loadClass("java.lang.String"));
+
+// /**
+//  * @param {string} className 
+//  * @returns {typeof any}
+//  */
+// const loadSpecial = (className) => {
+//     return new $NativeJavaClass(context, scope, $Class_forName.invoke(null, className));
+// }
 
 //#endregion
 
@@ -130,6 +132,13 @@ StylizerClass.prototype.translatable = function(key, _objects) {
         Component.translatable(key, args),
         this
     );
+}
+
+StylizerClass.custom = function(transformFunction) {
+    let created = function () {};
+    Object.setPrototypeOf(created.prototype, StylizerClass.prototype);
+    created.prototype.transform = transformFunction;
+    return new created();
 }
 
 //#endregion

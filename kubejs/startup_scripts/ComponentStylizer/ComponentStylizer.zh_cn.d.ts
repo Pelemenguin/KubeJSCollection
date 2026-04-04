@@ -69,6 +69,44 @@
  * - {@linkcode Emphasizer} - 简单的 `Stylizer`，用于强调一段被指定的字符包围的文本。例如默认情况下 `default _emph_` 会被转换至 “default **emph**”。
  *     可以自定义默认文本与强调文本的风格
  * 
+ * ## 自定义实现
+ * 
+ * 你可以选择通过 {@linkcode Object.setPrototypeOf} 来创建一个 `Stylizer` 的子类：
+ * 
+ * > ```javascript
+ * > // ES5 中创建子类的方法
+ * >
+ * > let CustomStylizer = function () {};
+ * > Object.setPrototypeOf(CustomStylizer.prototype, ComponentStylizer.Stylizer.prototype);
+ * > CustomStylizer.prototype.transform = function (text) {
+ * >     // 这里应该是你自己的 transform 方法实现
+ * >     // 这里以将文本变成浅紫色 Component 作为示例
+ * >     return Component.literal(text).lightPurple();
+ * > };
+ * > 
+ * > let customStylizer = new CustomStylizer();
+ * > if (Client.player) {
+ * >     let lazy = customStylizer.literal("使用了自定义 Stylizer！");
+ * >     Client.player.tell(lazy.get());
+ * > }
+ * > ```
+ * 
+ * 但是我们提供了 {@linkcode Stylizer.custom} 方法来更方便地创建子类实例：
+ * 
+ * > ```javascript
+ * > // 通过 custom 方法自动创建子类实例
+ * >
+ * > let customStylizer = ComponentStylizer.Stylizer.custom(text => {
+ * >     // 这里应该是你的 transform 方法实现
+ * >     return Component.literal(text).lightPurple();
+ * > });
+ * > 
+ * > if (Client.player) {
+ * >     let lazy = customStylizer.literal("使用自定义 Stylizer");
+ * >     Client.player.tell(lazy.get());
+ * > }
+ * > ```
+ * 
  * ## 类型定义
  * 
  * 由于在 Minecraft 1.20.1 版本上同时存在 ProbeJS 6 与 ProbeJS 7，
@@ -191,6 +229,21 @@ declare namespace ComponentStylizer {
      * `Stylizer` 是一个抽象基类，指定了一个 `transform` 方法，用于将一个字符串转化为一个带有自定义风格的 `Component`。
      */
     abstract class Stylizer {
+        /**
+         * 通过指定的函数创建一个自定义的 `Stylizer`
+         * 
+         * @param transformFunction 将输入文本转换为 `Component` 的函数
+         * 
+         * @example
+         * let customStylizer = ComponentStylizer.Stylizer.custom(text => {
+         *     return Component.literal(text).lightPurple();
+         * });
+         *
+         * if (Client.player) {
+         *     Client.player.tell(customStylizer.literal("使用自定义 Stylizer").get());
+         * }
+         */
+        static custom(transformFunction: (text: string) => Alias.Component): Stylizer;
         /**
          * 转换指定的文本。
          * 

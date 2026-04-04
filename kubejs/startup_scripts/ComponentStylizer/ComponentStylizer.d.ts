@@ -69,6 +69,44 @@
  * - {@linkcode Emphasizer} - A simple `Stylizer` used to emphasize text surrounded by specified characters. For example, by default `default _emph_` will be transformed into "default **emph**".
  *     You can customize the style of default text and emphasized text.
  * 
+ * ## Custom Implementation
+ * 
+ * You can create a subclass of `Stylizer` via {@linkcode Object.setPrototypeOf}:
+ * 
+ * > ```javascript
+ * > // Method to create a subclass in ES5
+ * >
+ * > let CustomStylizer = function () {};
+ * > Object.setPrototypeOf(CustomStylizer.prototype, ComponentStylizer.Stylizer.prototype);
+ * > CustomStylizer.prototype.transform = function (text) {
+ * >     // Your own transform method implementation goes here
+ * >     // Example: turn the text into a light purple Component
+ * >     return Component.literal(text).lightPurple();
+ * > };
+ * > 
+ * > let customStylizer = new CustomStylizer();
+ * > if (Client.player) {
+ * >     let lazy = customStylizer.literal("Using a custom Stylizer!");
+ * >     Client.player.tell(lazy.get());
+ * > }
+ * > ```
+ * 
+ * However, we provide the {@linkcode Stylizer.custom} method to create subclass instances more conveniently:
+ * 
+ * > ```javascript
+ * > // Automatically create a subclass instance via the custom method
+ * >
+ * > let customStylizer = ComponentStylizer.Stylizer.custom(text => {
+ * >     // Your own transform method implementation goes here
+ * >     return Component.literal(text).lightPurple();
+ * > });
+ * > 
+ * > if (Client.player) {
+ * >     let lazy = customStylizer.literal("Using a custom Stylizer");
+ * >     Client.player.tell(lazy.get());
+ * > }
+ * > ```
+ * 
  * ## Type definitions
  * 
  * Since both ProbeJS 6 and ProbeJS 7 exist on Minecraft version 1.20.1,
@@ -191,6 +229,21 @@ declare namespace ComponentStylizer {
      * `Stylizer` is an abstract base class that defines a `transform` method for converting a string into a `Component` with custom styling.
      */
     abstract class Stylizer {
+        /**
+         * Creates a custom `Stylizer` using the provided function.
+         * 
+         * @param transformFunction A function that converts the input text into a `Component`
+         * 
+         * @example
+         * let customStylizer = ComponentStylizer.Stylizer.custom(text => {
+         *     return Component.literal(text).lightPurple();
+         * });
+         *
+         * if (Client.player) {
+         *     Client.player.tell(customStylizer.literal("Using a custom Stylizer").get());
+         * }
+         */
+        static custom(transformFunction: (text: string) => Alias.Component): Stylizer;
         /**
          * Transforms the given text.
          * 
