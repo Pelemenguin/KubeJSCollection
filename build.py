@@ -53,7 +53,33 @@ for language, dts_path in definitions.items():
     with zipfile.ZipFile(zip_name, 'w') as zip_file:
         dts_name = f'{script_name}.d.ts'
         zip_file.write(dts_path, dts_name)
+        placed_scripts = []
         for xxx, script_path in scripts.items():
             js_name = f'{script_name}.{xxx}.js'
             zip_file.write(script_path, js_name)
+            placed_scripts.append(js_name)
         print("Created: " + zip_name)
+        # Write ReadmeForUsers.<language>.md as README.md
+
+        # Original text: (English)
+
+        # # How to use?
+        #
+        # Create a folder in each of {script_types},
+        # Place:
+        #
+        # {scripts}
+        #
+        # And place {definition} together with {startup_script}.
+
+        # So we should format
+
+        readme_name = f'ReadmeForUsers.{language}.md'
+        if os.path.exists(readme_name):
+            with open(readme_name, 'r', encoding='utf-8') as f:
+                readme_content = f.read()
+            readme_content = readme_content.replace('{script_types}', '[' + ', '.join(xxx + '_scripts' for xxx in scripts.keys()) + ']')
+            readme_content = readme_content.replace('{scripts}', '\n'.join([f'- `{script_path}`' for script_path in placed_scripts]))
+            readme_content = readme_content.replace('{definition}', f'`{dts_name}`')
+            readme_content = readme_content.replace('{startup_script}', f'`{script_name}.{xxx}.js`' if 'startup' in scripts else 'the startup script')
+            zip_file.writestr('README.md', readme_content)
