@@ -143,15 +143,19 @@ declare namespace RegCmd {
         protected requirementPredicate: (context: Alias.CommandSourceStack) => boolean;
         protected args: P;
         protected defaultValues: Partial<{[s in keyof P]: () => P[S] extends CommandArgumentType<any, infer R> ? R : never}>;
+        protected parallelCommands: CmdBuilder<any>[];
+        protected childrenCommands: CmdBuilder<any>[];
         executes(executeFunction: (context: Alias.CommandContext<Alias.CommandSourceStack>, args: Readonly<{[argName in keyof P]: P[argName] extends CommandArgumentType<any, infer R> ? R : never}>) => number): this;
+        clearRequirements(): this;
         requires(requirementPredicate: (context: Alias.CommandSourceStack) => boolean): this;
         requiresModerator(): this;
         requiresOperator(): this;
         requiresServerAdmin(): this;
         requiresServerOwner(): this;
-        argType<S extends string, T, R>(argName: S, type: CommandArgumentType<T, R>): CmdBuilder<P & {[s in S]: CommandArgumentType<T, R>}>
+        argType<S extends string, T, R>(argName: S, type: CommandArgumentType<T, R>): CmdBuilder<Omit<P, S> & {[s in S]: CommandArgumentType<T, R>}>
         argDefault<S extends keyof P>(argName: S, defaultValue: () => P[S] extends CommandArgumentType<any, infer R> ? R : never): this;
-        registerToEvent(event: Alias.CommandRegistryEventJS): void;
+        or(usage: string): CmdBuilder<P>;
+        registerToEvent(event: Alias.CommandRegistryEventJS, registerer: (command: Alias.ArgumentBuilder<Internal.CommandSourceStack, RegCmd.Alias.ArgumentBuilder<any, any>>) => void, isRoot: boolean): void;
     }
 
     namespace ArgTypes {

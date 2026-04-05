@@ -13,6 +13,7 @@ const $FloatArgumentType   = Java.loadClass("com.mojang.brigadier.arguments.Floa
 const $IntegerArgumentType = Java.loadClass("com.mojang.brigadier.arguments.IntegerArgumentType");
 const $LongArgumentType    = Java.loadClass("com.mojang.brigadier.arguments.LongArgumentType");
 const $StringArgumentType  = Java.loadClass("com.mojang.brigadier.arguments.StringArgumentType");
+const $LiteralCommandNode  = Java.loadClass("com.mojang.brigadier.tree.LiteralCommandNode");
 
 const $AngleArgument             = Java.loadClass("net.minecraft.commands.arguments.AngleArgument");
 const $ColorArgument             = Java.loadClass("net.minecraft.commands.arguments.ColorArgument");
@@ -137,6 +138,8 @@ let exported = {
         this.requirementPredicate = () => true;
         this.args = {};
         this.defaultValues = {};
+        this.parallelCommands = [];
+        this.childrenCommands = [];
     },
     ArgTypes: {
         bool: () => {
@@ -518,10 +521,10 @@ Object.freeze(exported.ArgTypes);
 let CmdBuilder = exported.CmdBuilder;
 
 /** @type {RegCmd.CmdBuilder["registerToEvent"]} */
-CmdBuilder.prototype.registerToEvent = function(event) {
-    const Commands = event.commands;
+CmdBuilder.prototype.registerToEvent = function(event, registerer, isRoot) {
+    const Commands = event.getCommands();
 
-    if (this.commandArguments[0].type != "LITERAL") {
+    if (isRoot && this.commandArguments[0].type != "LITERAL") {
         throw new Error("First argument must be a literal");
     }
 
@@ -591,13 +594,19 @@ CmdBuilder.prototype.registerToEvent = function(event) {
 
     cur.forEach(a => {
         a.requires(this.requirementPredicate);
-        event.register(a)
+        registerer(a)
     });
+
+    this.parallelCommands.forEach(c => c.registerToEvent(event, registerer, isRoot));
 }
 /** @type {RegCmd.CmdBuilder["executes"]} */
 CmdBuilder.prototype.executes = function(executeFunction) {
     this.executeFunction = executeFunction;
     return this;
+}
+/** @type {RegCmd.CmdBuilder["clearRequirements"]} */
+CmdBuilder.prototype.clearRequirements = function() {
+    this.requirementPredicate = () => true;
 }
 /** @type {RegCmd.CmdBuilder["requires"]} */
 CmdBuilder.prototype.requires = function(requirementFunction) {
@@ -635,10 +644,23 @@ CmdBuilder.prototype.argDefault = function(argName, defaultValue) {
     this.defaultValues[argName] = defaultValue;
     return this;
 }
+/** @type {RegCmd.CmdBuilder["or"]} */
+CmdBuilder.prototype.or = function(usage) {
+    let result = new CmdBuilder(exported.parseCommandUsage(usage));
+    for (let a in this.args) {
+        result.argType(a, this.args[a]);
+    }
+    for (let a in this.defaultValues) {
+        result.argDefault(a, this.defaultValues[a]);
+    }
+    result.requires(this.requirementPredicate);
+    this.parallelCommands.push(result);
+    return result;
+}
 
 ServerEvents.commandRegistry(event => {
     for (let builder of ALL_BUILDERS) {
-        builder.registerToEvent(event);
+        builder.registerToEvent(event, c => event.register(c), true);
     }
 })
 
