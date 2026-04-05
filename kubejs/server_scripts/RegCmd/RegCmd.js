@@ -14,19 +14,49 @@ const $IntegerArgumentType = Java.loadClass("com.mojang.brigadier.arguments.Inte
 const $LongArgumentType    = Java.loadClass("com.mojang.brigadier.arguments.LongArgumentType");
 const $StringArgumentType  = Java.loadClass("com.mojang.brigadier.arguments.StringArgumentType");
 
-const $AngleArgument          = Java.loadClass("net.minecraft.commands.arguments.AngleArgument");
-const $ColorArgument          = Java.loadClass("net.minecraft.commands.arguments.ColorArgument");
-const $ComponentArgument      = Java.loadClass("net.minecraft.commands.arguments.ComponentArgument");
-const $DimensionArgument      = Java.loadClass("net.minecraft.commands.arguments.DimensionArgument");
-const $EntityArgument         = Java.loadClass("net.minecraft.commands.arguments.EntityArgument");
-const $EntityAnchorArgument   = Java.loadClass("net.minecraft.commands.arguments.EntityAnchorArgument");
-const $GameProfileArgument    = Java.loadClass("net.minecraft.commands.arguments.GameProfileArgument");
-const $RangeArgument$Floats   = Java.loadClass("net.minecraft.commands.arguments.RangeArgument$Floats");
-const $BlockPredicateArgument = Java.loadClass("net.minecraft.commands.arguments.blocks.BlockPredicateArgument");
-const $BlockStateArgument     = Java.loadClass("net.minecraft.commands.arguments.blocks.BlockStateArgument");
-const $BlockPosArgument       = Java.loadClass("net.minecraft.commands.arguments.coordinates.BlockPosArgument");
-const $ColumnPosArgument      = Java.loadClass("net.minecraft.commands.arguments.coordinates.ColumnPosArgument");
-const $FunctionArgument       = Java.loadClass("net.minecraft.commands.arguments.item.FunctionArgument");
+const $AngleArgument             = Java.loadClass("net.minecraft.commands.arguments.AngleArgument");
+const $ColorArgument             = Java.loadClass("net.minecraft.commands.arguments.ColorArgument");
+const $ComponentArgument         = Java.loadClass("net.minecraft.commands.arguments.ComponentArgument");
+const $CompoundTagArgument       = Java.loadClass("net.minecraft.commands.arguments.CompoundTagArgument");
+const $DimensionArgument         = Java.loadClass("net.minecraft.commands.arguments.DimensionArgument");
+const $EntityArgument            = Java.loadClass("net.minecraft.commands.arguments.EntityArgument");
+const $EntityAnchorArgument      = Java.loadClass("net.minecraft.commands.arguments.EntityAnchorArgument");
+const $GameProfileArgument       = Java.loadClass("net.minecraft.commands.arguments.GameProfileArgument");
+const $GameModeArgument          = Java.loadClass("net.minecraft.commands.arguments.GameModeArgument");
+const $HeightmapTypeArgument     = Java.loadClass("net.minecraft.commands.arguments.HeightmapTypeArgument");
+const $MessageArgument           = Java.loadClass("net.minecraft.commands.arguments.MessageArgument");
+const $NbtPathArgument           = Java.loadClass("net.minecraft.commands.arguments.NbtPathArgument");
+const $NbtTagArgument            = Java.loadClass("net.minecraft.commands.arguments.NbtTagArgument");
+const $ObjectiveArgument         = Java.loadClass("net.minecraft.commands.arguments.ObjectiveArgument");
+const $ObjectiveCriteriaArgument = Java.loadClass("net.minecraft.commands.arguments.ObjectiveCriteriaArgument");
+const $OperationArgument         = Java.loadClass("net.minecraft.commands.arguments.OperationArgument");
+const $ParticleArgument          = Java.loadClass("net.minecraft.commands.arguments.ParticleArgument");
+const $RangeArgument$Floats      = Java.loadClass("net.minecraft.commands.arguments.RangeArgument$Floats");
+const $RangeArgument$Ints        = Java.loadClass("net.minecraft.commands.arguments.RangeArgument$Ints");
+const $ResourceArgument          = Java.loadClass("net.minecraft.commands.arguments.ResourceArgument");
+const $ResourceKeyArgument       = Java.loadClass("net.minecraft.commands.arguments.ResourceKeyArgument");
+const $ResourceLocationArgument  = Java.loadClass("net.minecraft.commands.arguments.ResourceLocationArgument");
+const $ResourceOrTagArgument     = Java.loadClass("net.minecraft.commands.arguments.ResourceOrTagArgument");
+const $ResourceOrTagKeyArgument  = Java.loadClass("net.minecraft.commands.arguments.ResourceOrTagKeyArgument");
+const $ScoreHolderArgument       = Java.loadClass("net.minecraft.commands.arguments.ScoreHolderArgument");
+const $ScoreboardSlotArgument    = Java.loadClass("net.minecraft.commands.arguments.ScoreboardSlotArgument");
+const $SlotArgument              = Java.loadClass("net.minecraft.commands.arguments.SlotArgument");
+const $TeamArgument              = Java.loadClass("net.minecraft.commands.arguments.TeamArgument");
+const $TemplateMirrorArgument    = Java.loadClass("net.minecraft.commands.arguments.TemplateMirrorArgument");
+const $TemplateRotationArgument  = Java.loadClass("net.minecraft.commands.arguments.TemplateRotationArgument");
+const $TimeArgument              = Java.loadClass("net.minecraft.commands.arguments.TimeArgument");
+const $UuidArgument              = Java.loadClass("net.minecraft.commands.arguments.UuidArgument");
+const $BlockPredicateArgument    = Java.loadClass("net.minecraft.commands.arguments.blocks.BlockPredicateArgument");
+const $BlockStateArgument        = Java.loadClass("net.minecraft.commands.arguments.blocks.BlockStateArgument");
+const $BlockPosArgument          = Java.loadClass("net.minecraft.commands.arguments.coordinates.BlockPosArgument");
+const $ColumnPosArgument         = Java.loadClass("net.minecraft.commands.arguments.coordinates.ColumnPosArgument");
+const $RotationArgument          = Java.loadClass("net.minecraft.commands.arguments.coordinates.RotationArgument");
+const $SwizzleArgument           = Java.loadClass("net.minecraft.commands.arguments.coordinates.SwizzleArgument");
+const $Vec2Argument              = Java.loadClass("net.minecraft.commands.arguments.coordinates.Vec2Argument");
+const $Vec3Argument              = Java.loadClass("net.minecraft.commands.arguments.coordinates.Vec3Argument");
+const $FunctionArgument          = Java.loadClass("net.minecraft.commands.arguments.item.FunctionArgument");
+const $ItemArgument              = Java.loadClass("net.minecraft.commands.arguments.item.ItemArgument");
+const $ItemPredicateArgument     = Java.loadClass("net.minecraft.commands.arguments.item.ItemPredicateArgument");
 
 /** @type {RegCmd.CmdBuilder[]} */
 const ALL_BUILDERS = [];
@@ -288,9 +318,202 @@ let exported = {
                 getType: () => $GameProfileArgument.gameProfile(),
                 getValue: (context, argName) => $GameProfileArgument.getGameProfiles(context, argName)
             };
+        },
+        gameMode: () => {
+            return {
+                getType: () => $GameModeArgument.gameMode(),
+                getValue: (context, argName) => $GameModeArgument.getGameMode(context, argName)
+            };
+        },
+        heightmap: () => {
+            return {
+                getType: () => $HeightmapTypeArgument.heightmap(),
+                getValue: (context, argName) => $HeightmapTypeArgument.getHeightmap(context, argName)
+            };
+        },
+        intRange: () => {
+            return {
+                getType: () => $RangeArgument$Ints.intRange(),
+                getValue: (context, argName) => $RangeArgument$Ints.getRange(context, argName)
+            };
+        },
+        itemPredicate: () => {
+            return {
+                getType: (context) => $ItemPredicateArgument.itemPredicate(context),
+                getValue: (context, argName) => $ItemPredicateArgument.getItemPredicate(context, argName)
+            };
+        },
+        itemSlot: () => {
+            return {
+                getType: () => $SlotArgument.slot(),
+                getValue: (context, argName) => $SlotArgument.getSlot(context, argName)
+            };
+        },
+        item: () => {
+            return {
+                getType: (context) => $ItemArgument.item(context),
+                getValue: (context, argName) => $ItemArgument.getItem(context, argName)
+            };
+        },
+        message: () => {
+            return {
+                getType: () => $MessageArgument.message(),
+                getValue: (context, argName) => $MessageArgument.getMessage(context, argName)
+            };
+        },
+        nbtCompound: () => {
+            return {
+                getType: () => $CompoundTagArgument.compoundTag(),
+                getValue: (context, argName) => $CompoundTagArgument.getCompoundTag(context, argName)
+            };
+        },
+        nbtPath: () => {
+            return {
+                getType: () => $NbtPathArgument.nbtPath(),
+                getValue: (context, argName) => $NbtPathArgument.getPath(context, argName)
+            };
+        },
+        nbtTag: () => {
+            return {
+                getType: () => $NbtTagArgument.nbtTag(),
+                getValue: (context, argName) => $NbtTagArgument.getNbtTag(context, argName)
+            };
+        },
+        objective: () => {
+            return {
+                getType: () => $ObjectiveArgument.objective(),
+                getValue: (context, argName) => $ObjectiveArgument.getObjective(context, argName)
+            };
+        },
+        writableObjective: () => {
+            return {
+                getType: () => $ObjectiveArgument.objective(),
+                getValue: (context, argName) => $ObjectiveArgument.getWritableObjective(context, argName)
+            };
+        },
+        objectiveCriteria: () => {
+            return {
+                getType: () => $ObjectiveCriteriaArgument.criteria(),
+                getValue: (context, argName) => $ObjectiveCriteriaArgument.getCriteria(context, argName)
+            };
+        },
+        operation: () => {
+            return {
+                getType: () => $OperationArgument.operation(),
+                getValue: (context, argName) => $OperationArgument.getOperation(context, argName)
+            };
+        },
+        particle: () => {
+            return {
+                getType: (context) => $ParticleArgument.particle(context),
+                getValue: (context, argName) => $ParticleArgument.getParticle(context, argName)
+            }
+        },
+        resource: (resKey) => {
+            return {
+                getType: (context) => $ResourceArgument.resource(context, resKey),
+                getValue: (context, argName) => $ResourceArgument.getResource(context, argName, resKey)
+            }
+        },
+        // TODO: ResourceKeyArgument
+        resourceLocation: () => {
+            return {
+                getType: () => $ResourceLocationArgument.id(),
+                getValue: (context, argName) => $ResourceLocationArgument.getId(context, argName)
+            };
+        },
+        resourceOrTag: (resKey) => {
+            return {
+                getType: (context) => $ResourceOrTagArgument.resourceOrTag(context, resKey),
+                getValue: (context, argName) => $ResourceOrTagArgument.getResourceOrTag(context, argName, resKey)
+            };
+        },
+        resourceOrTagKey: (resKey) => {
+            return {
+                getType: () => $ResourceOrTagKeyArgument.resourceOrTagKey(resKey),
+                getValue: (context, argName) => $ResourceOrTagKeyArgument.getResourceOrTagKey(context, argName, resKey, null)
+            };
+        },
+        rotation: () => {
+            return {
+                getType: () => $RotationArgument.rotation(),
+                getValue: (context, argName) => $RotationArgument.getRotation(context, argName)
+            }
+        },
+        scoreHolder: () => {
+            return {
+                getType: () => $ScoreHolderArgument.scoreHolder(),
+                getValue: (context, argName) => $ScoreHolderArgument.getName(context, argName)
+            };
+        },
+        scoreHolders: () => {
+            return {
+                getType: () => $ScoreHolderArgument.scoreHolders(),
+                getValue: (context, argName) => $ScoreHolderArgument.getNames(context, argName)
+            };
+        },
+        scoreboardSlot: () => {
+            return {
+                getType: () => $ScoreboardSlotArgument.displaySlot(),
+                getValue: (context, argName) => $ScoreboardSlotArgument.getDisplaySlot(context, argName)
+            };
+        },
+        swizzle: () => {
+            return {
+                getType: () => $SwizzleArgument.swizzle(),
+                getValue: (context, argName) => $SwizzleArgument.getSwizzle(context, argName)
+            };
+        },
+        team: () => {
+            return {
+                getType: () => $TeamArgument.team(),
+                getValue: (context, argName) => $TeamArgument.getTeam(context, argName)
+            };
+        },
+        templateMirror: () => {
+            return {
+                getType: () => $TemplateMirrorArgument.templateMirror(),
+                getValue: (context, argName) => $TemplateMirrorArgument.getMirror(context, argName)
+            };
+        },
+        templateRotation: () => {
+            return {
+                getType: () => $TemplateRotationArgument.templateRotation(),
+                getValue: (context, argName) => $TemplateRotationArgument.getRotation(context, argName)
+            };
+        },
+        time: (minimum) => {
+            if (minimum == undefined) minimum = 0;
+            return {
+                getType: () => $TimeArgument.time(minimum),
+                getValue: (context, argName) => $IntegerArgumentType.getInteger(context, argName)
+            };
+        },
+        uuid: () => {
+            return {
+                getType: () => $UuidArgument.uuid(),
+                getValue: (context, argName) => $UuidArgument.getUuid(context, argName)
+            };
+        },
+        vec2: (centerCorrect) => {
+            if (centerCorrect === undefined) centerCorrect = false;
+            return {
+                getType: () => $Vec2Argument.vec2(centerCorrect),
+                getValue: (context, argName) => $Vec2Argument.getVec2(context, argName)
+            };
+        },
+        vec3: (centerCorrect) => {
+            if (centerCorrect === undefined) centerCorrect = false;
+            return {
+                getType: () => $Vec3Argument.vec3(centerCorrect),
+                getValue: (context, argName) => $Vec3Argument.getVec3(context, argName)
+            };
         }
     }
 };
+
+Object.freeze(exported);
+Object.freeze(exported.ArgTypes);
 
 let CmdBuilder = exported.CmdBuilder;
 
