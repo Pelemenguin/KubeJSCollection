@@ -7,10 +7,26 @@ const RegCmd = (() => {
 const $Integer = Java.loadClass("java.lang.Integer");
 const $Long    = Java.loadClass("java.lang.Long");
 
-const $FloatArgumentType   = Java.loadClass("com.mojang.brigadier.arguments.FloatArgumentType");
+const $BoolArgumentType    = Java.loadClass("com.mojang.brigadier.arguments.BoolArgumentType");
 const $DoubleArgumentType  = Java.loadClass("com.mojang.brigadier.arguments.DoubleArgumentType");
+const $FloatArgumentType   = Java.loadClass("com.mojang.brigadier.arguments.FloatArgumentType");
 const $IntegerArgumentType = Java.loadClass("com.mojang.brigadier.arguments.IntegerArgumentType");
 const $LongArgumentType    = Java.loadClass("com.mojang.brigadier.arguments.LongArgumentType");
+const $StringArgumentType  = Java.loadClass("com.mojang.brigadier.arguments.StringArgumentType");
+
+const $AngleArgument          = Java.loadClass("net.minecraft.commands.arguments.AngleArgument");
+const $ColorArgument          = Java.loadClass("net.minecraft.commands.arguments.ColorArgument");
+const $ComponentArgument      = Java.loadClass("net.minecraft.commands.arguments.ComponentArgument");
+const $DimensionArgument      = Java.loadClass("net.minecraft.commands.arguments.DimensionArgument");
+const $EntityArgument         = Java.loadClass("net.minecraft.commands.arguments.EntityArgument");
+const $EntityAnchorArgument   = Java.loadClass("net.minecraft.commands.arguments.EntityAnchorArgument");
+const $GameProfileArgument    = Java.loadClass("net.minecraft.commands.arguments.GameProfileArgument");
+const $RangeArgument$Floats   = Java.loadClass("net.minecraft.commands.arguments.RangeArgument$Floats");
+const $BlockPredicateArgument = Java.loadClass("net.minecraft.commands.arguments.blocks.BlockPredicateArgument");
+const $BlockStateArgument     = Java.loadClass("net.minecraft.commands.arguments.blocks.BlockStateArgument");
+const $BlockPosArgument       = Java.loadClass("net.minecraft.commands.arguments.coordinates.BlockPosArgument");
+const $ColumnPosArgument      = Java.loadClass("net.minecraft.commands.arguments.coordinates.ColumnPosArgument");
+const $FunctionArgument       = Java.loadClass("net.minecraft.commands.arguments.item.FunctionArgument");
 
 /** @type {RegCmd.CmdBuilder[]} */
 const ALL_BUILDERS = [];
@@ -93,6 +109,48 @@ let exported = {
         this.defaultValues = {};
     },
     ArgTypes: {
+        bool: () => {
+            return {
+                getType: () => $BoolArgumentType.bool(),
+                getValue: (context, argName) => $BoolArgumentType.getBool(context, argName)
+            }
+        },
+        double: () => {
+            return {
+                getType: () => $DoubleArgumentType.doubleArg(),
+                getValue: (context, argName) => $DoubleArgumentType.getDouble(context, argName)
+            };
+        },
+        doubleBetween: (min, max) => {
+            return {
+                getType: () => $DoubleArgumentType.doubleArg(min, max),
+                getValue: (context, argName) => $DoubleArgumentType.getDouble(context, argName)
+            };
+        },
+        doubleAbove: (min) => {
+            return RegCmd.ArgTypes.doubleBetween(min, Number.POSITIVE_INFINITY);
+        },
+        doubleBelow: (max) => {
+            return RegCmd.ArgTypes.doubleBetween(Number.NEGATIVE_INFINITY, max);
+        },
+        float: () => {
+            return {
+                getType: () => $FloatArgumentType.floatArg(),
+                getValue: (context, argName) => $FloatArgumentType.getFloat(context, argName)
+            };
+        },
+        floatBetween: (min, max) => {
+            return {
+                getType: () => $FloatArgumentType.floatArg(min, max),
+                getValue: (context, argName) => $FloatArgumentType.getFloat(context, argName)
+            };
+        },
+        floatAbove: (min) => {
+            return RegCmd.ArgTypes.floatBetween(min, Number.POSITIVE_INFINITY);
+        },
+        floatBelow: (max) => {
+            return RegCmd.ArgTypes.floatBetween(Number.NEGATIVE_INFINITY, max);
+        },
         integer: () => {
             return {
                 getType: () => $IntegerArgumentType.integer(),
@@ -129,41 +187,107 @@ let exported = {
         longBelow: (max) => {
             return RegCmd.ArgTypes.longBetween($Long.MIN_VALUE, max);
         },
-        float: () => {
+        string: () => {
             return {
-                getType: () => $FloatArgumentType.floatArg(),
-                getValue: (context, argName) => $FloatArgumentType.getFloat(context, argName)
+                getType: () => $StringArgumentType.string(),
+                getValue: (context, argName) => $StringArgumentType.getString(context, argName)
             };
         },
-        floatBetween: (min, max) => {
+        word: () => {
             return {
-                getType: () => $FloatArgumentType.floatArg(min, max),
-                getValue: (context, argName) => $FloatArgumentType.getFloat(context, argName)
+                getType: () => $StringArgumentType.word(),
+                getValue: (context, argName) => $StringArgumentType.getString(context, argName)
             };
         },
-        floatAbove: (min) => {
-            return RegCmd.ArgTypes.floatBetween(min, Number.POSITIVE_INFINITY);
-        },
-        floatBelow: (max) => {
-            return RegCmd.ArgTypes.floatBetween(Number.NEGATIVE_INFINITY, max);
-        },
-        double: () => {
+        greedyString: () => {
             return {
-                getType: () => $DoubleArgumentType.doubleArg(),
-                getValue: (context, argName) => $DoubleArgumentType.getDouble(context, argName)
+                getType: () => $StringArgumentType.greedyString(),
+                getValue: (context, argName) => $StringArgumentType.getString(context, argName)
             };
         },
-        doubleBetween: (min, max) => {
+        angle: () => {
             return {
-                getType: () => $DoubleArgumentType.doubleArg(min, max),
-                getValue: (context, argName) => $DoubleArgumentType.getDouble(context, argName)
+                getType: () => $AngleArgument.angle(),
+                getValue: (context, argName) => $AngleArgument.getAngle(context, argName)
             };
         },
-        doubleAbove: (min) => {
-            return RegCmd.ArgTypes.doubleBetween(min, Number.POSITIVE_INFINITY);
+        blockPos: () => {
+            return {
+                getType: () => $BlockPosArgument.blockPos(),
+                getValue: (context, argName) => $BlockPosArgument.getBlockPos(context, argName)
+            };
         },
-        doubleBelow: (max) => {
-            return RegCmd.ArgTypes.doubleBetween(Number.NEGATIVE_INFINITY, max);
+        blockPredicate: () => {
+            return {
+                getType: (context) => $BlockPredicateArgument.blockPredicate(context),
+                getValue: (context, argName) => $BlockPredicateArgument.getBlockPredicate(context, argName)
+            };
+        },
+        blockState: () => {
+            return {
+                getType: (context) => $BlockStateArgument.block(context),
+                getValue: (context, argName) => $BlockStateArgument.getBlock(context, argName)
+            };
+        },
+        color: () => {
+            return {
+                getType: () => $ColorArgument.color(),
+                getValue: (context, argName) => $ColorArgument.getColor(context, argName)
+            };
+        },
+        columnPos: () => {
+            return {
+                getType: () => $ColumnPosArgument.columnPos(),
+                getValue: (context, argName) => $ColumnPosArgument.getColumnPos(context, argName)
+            };
+        },
+        component: () => {
+            return {
+                getType: () => $ComponentArgument.textComponent(),
+                getValue: (context, argName) => $ComponentArgument.getComponent(context, argName)
+            };
+        },
+        dimension: () => {
+            return {
+                getType: () => $DimensionArgument.dimension(),
+                getValue: (context, argName) => $DimensionArgument.getDimension(context, argName)
+            };
+        },
+        entity: () => {
+            return {
+                getType: () => $EntityArgument.entity(),
+                getValue: (context, argName) => $EntityArgument.getEntity(context, argName)
+            };
+        },
+        entities: () => {
+            return {
+                getType: () => $EntityArgument.entities(),
+                getValue: (context, argName) => $EntityArgument.getEntities(context, argName)
+            };
+        },
+        entityAnchor: () => {
+            return {
+                getType: () => $EntityAnchorArgument.anchor(),
+                getValue: (context, argName) => $EntityAnchorArgument.getAnchor(context, argName)
+            };
+        },
+        floatRange: () => {
+            return {
+                getType: () => $RangeArgument$Floats.floatRange(),
+                getValue: (context, argName) => $RangeArgument$Floats.getRange(context, argName)
+            };
+        },
+        functions: () => {
+            return {
+                getType: () => $FunctionArgument.functions(),
+                getValue: (context, argName) => $FunctionArgument.getFunctions(context, argName)
+            };
+        },
+        gameProfile: () => {
+            return {
+                getType: () => $GameProfileArgument.gameProfile(),
+                getValue: (context, argName) => $GameProfileArgument.getGameProfiles(context, argName)
+            };
         }
     }
 };
@@ -201,9 +325,9 @@ CmdBuilder.prototype.registerToEvent = function(event) {
                 break;
             }
             case "ARGUMENT": {
-                /** @type {RegCmd.CommandArgumentType<?>} */
+                /** @type {RegCmd.CommandArgumentType<?, ?>} */
                 let type = this.args[part.name];
-                let created = Commands.argument(part.name, type.getType());
+                let created = Commands.argument(part.name, type.getType(event.context));
                 cur.forEach(a => created.then(a));
                 cur = [created];
                 break;
@@ -278,14 +402,14 @@ CmdBuilder.prototype.requiresServerOwner = function() {
     this.requires(s => s.hasPermission(4));
     return this;
 }
-/** @type {RegCmd.CmdBuilder["paramType"]} */
-CmdBuilder.prototype.paramType = function(paramName, type) {
-    this.args[paramName] = type;
+/** @type {RegCmd.CmdBuilder["argType"]} */
+CmdBuilder.prototype.argType = function(argName, type) {
+    this.args[argName] = type;
     return this;
 }
-/** @type {RegCmd.CmdBuilder["paramDefault"]} */
-CmdBuilder.prototype.paramDefault = function(paramName, defaultValue) {
-    this.defaultValues[paramName] = defaultValue;
+/** @type {RegCmd.CmdBuilder["argDefault"]} */
+CmdBuilder.prototype.argDefault = function(argName, defaultValue) {
+    this.defaultValues[argName] = defaultValue;
     return this;
 }
 
