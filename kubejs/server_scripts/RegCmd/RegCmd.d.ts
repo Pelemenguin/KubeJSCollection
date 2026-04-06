@@ -121,7 +121,7 @@
  * >         // args already contains the command arguments for you
  * >         const { num } = args;
  * >         let result = num * 2;
- * >         context.getSource().sendSuccess(Component.literal(result.toFixed()));
+ * >         context.getSource().sendSuccess(Component.literal(result.toFixed()), true);
  * >         return result;
  * >     });
  * > ```
@@ -194,7 +194,7 @@
  * >         } else {
  * >             context.getSource().sendSuccess(Component.literal("Goodbye!"), true);
  * >         }
- * >         return result;
+ * >         return 1;
  * >     });
  * > ```
  * 
@@ -206,11 +206,11 @@
  * >     .argType("value", RegCmd.ArgTypes.integer())
  * >     .executes((context, args, literals) => {
  * >         if (literals[1] == null) {
- * >             context.getSource().sendSuccess(Component.literal("Your secret value is: " + secretValue.toFixed()), true);
+ * >             context.getSource().sendSuccess(Component.literal("Your secret value is: " + secretValue), true);
  * >         } else {
  * >             const newValue = args.value;
  * >             secretValue = newValue;
- * >             context.getSource().sendSuccess(Component.literal("Secret value set to: " + secretValue.toFixed()), true);
+ * >             context.getSource().sendSuccess(Component.literal("Secret value set to: " + secretValue), true);
  * >         }
  * >         return 1;
  * >     });
@@ -238,11 +238,11 @@
  * >     .executes((context, args) => {
  * >         let player = context.getSource().getPlayer();
  * >         if (player == null) {
- * >             context.getSource().sendFailure(Component.literal("Caller is not a player"), true);
+ * >             context.getSource().sendFailure(Component.literal("Caller is not a player"));
  * >             return 0;
  * >         }
  * >         player.addDeltaMovement(args.motion);
- * >         context.getSource().sendFailure(Component.literal("Added acceleration to the caller"), true);
+ * >         context.getSource().sendSuccess(Component.literal("Added acceleration to the caller"), true);
  * >         return 1;
  * >     });
  * > ```
@@ -270,7 +270,7 @@
  * ---
  * 
  * @author Pelemenguin
- * @version 1.0
+ * @version 1.0.1
  * @license MIT
  * @copyright Pelemenguin 2026
  */
@@ -535,7 +535,7 @@ declare namespace RegCmd {
          * >         context.getSource().sendSuccess(Component.literal(result.toFixed()), true);
          * >         return result;
          * >     })
-         * >     .or("/calculator sub <int1> <int2>")
+         * >     .or("/calculator sub <int1> [<int2>]")
          * >     // parallel command branches created via or inherit all argument types and default values from the original
          * >     .executes((context, args) => {
          * >         const { int1, int2 } = args;
@@ -558,14 +558,15 @@ declare namespace RegCmd {
          * > let secret = 0;
          * > RegCmd.defineCommand("/secret")
          * >     .executes((context) => {
-         * >         context.getSource().sendSuccess(Component.literal("Your secret value is: " + secret.toFixed()), true);
+         * >         context.getSource().sendSuccess(Component.literal("You secret value is: " + secret), true);
          * >         return 1;
          * >     })
          * >     .then("set <value>")
+         * >     .argType("value", RegCmd.ArgTypes.integer())
          * >     .executes((context, args) => {
          * >         const newValue = args.value;
          * >         secret = newValue;
-         * >         context.getSource().sendSuccess(Component.literal("Secret value set to: " + secret.toFixed()), true);
+         * >         context.getSource().sendSuccess(Component.literal("Secret value set to: " + secret), true);
          * >     });
          * > ```
          * 

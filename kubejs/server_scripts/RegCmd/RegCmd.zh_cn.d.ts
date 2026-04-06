@@ -121,7 +121,7 @@
  * >         // args 中已经帮你加载好了命令中的参数
  * >         const { num } = args;
  * >         let result = num * 2;
- * >         context.getSource().sendSuccess(Component.literal(result.toFixed()));
+ * >         context.getSource().sendSuccess(Component.literal(result.toFixed()), true);
  * >         return result;
  * >     });
  * > ```
@@ -194,7 +194,7 @@
  * >         } else {
  * >             context.getSource().sendSuccess(Component.literal("再见！"), true);
  * >         }
- * >         return result;
+ * >         return 1;
  * >     });
  * > ```
  * 
@@ -206,11 +206,11 @@
  * >     .argType("value", RegCmd.ArgTypes.integer())
  * >     .executes((context, args, literals) => {
  * >         if (literals[1] == null) {
- * >             context.getSource().sendSuccess(Component.literal("你的秘密数值是：" + secretValue.toFixed()), true);
+ * >             context.getSource().sendSuccess(Component.literal("你的秘密数值是：" + secretValue), true);
  * >         } else {
  * >             const newValue = args.value;
  * >             secretValue = newValue;
- * >             context.getSource().sendSuccess(Component.literal("已将秘密设置设置为：" + secretValue.toFixed()), true);
+ * >             context.getSource().sendSuccess(Component.literal("已将秘密设置设置为：" + secretValue), true);
  * >         }
  * >         return 1;
  * >     });
@@ -238,11 +238,11 @@
  * >     .executes((context, args) => {
  * >         let player = context.getSource().getPlayer();
  * >         if (player == null) {
- * >             context.getSource().sendFailure(Component.literal("调用者不是玩家"), true);
+ * >             context.getSource().sendFailure(Component.literal("调用者不是玩家"));
  * >             return 0;
  * >         }
  * >         player.addDeltaMovement(args.motion);
- * >         context.getSource().sendFailure(Component.literal("已对调用者添加加速度"), true);
+ * >         context.getSource().sendSuccess(Component.literal("已对调用者添加加速度"), true);
  * >         return 1;
  * >     });
  * > ```
@@ -270,7 +270,7 @@
  * ---
  * 
  * @author Pelemenguin
- * @version 1.0
+ * @version 1.0.1
  * @license MIT
  * @copyright Pelemenguin 2026
  */
@@ -535,7 +535,7 @@ declare namespace RegCmd {
          * >         context.getSource().sendSuccess(Component.literal(result.toFixed()), true);
          * >         return result;
          * >     })
-         * >     .or("/calculator sub <int1> <int2>")
+         * >     .or("/calculator sub <int1> [<int2>]")
          * >     // 通过 or 创建的平行命令分支会继承原先的所有参数类型与默认值
          * >     .executes((context, args) => {
          * >         const { int1, int2 } = args;
@@ -552,20 +552,21 @@ declare namespace RegCmd {
         /**
          * 创建一个新的子命令分支。新分支以当前命令为父命令，并继承当前命令的所有参数类型与默认值，但不共享字面量和执行函数。
          * 
-         * 例如： 
+         * 例如：
          * 
          * > ```javascript
          * > let secret = 0;
          * > RegCmd.defineCommand("/secret")
          * >     .executes((context) => {
-         * >         context.getSource().sendSuccess(Component.literal("你的秘密数值是：" + secret.toFixed()), true);
+         * >         context.getSource().sendSuccess(Component.literal("你的秘密数值是：" + secret), true);
          * >         return 1;
          * >     })
          * >     .then("set <value>")
+         * >     .argType("value", RegCmd.ArgTypes.integer())
          * >     .executes((context, args) => {
          * >         const newValue = args.value;
          * >         secret = newValue;
-         * >         context.getSource().sendSuccess(Component.literal("已将秘密设置设置为：" + secret.toFixed()), true);
+         * >         context.getSource().sendSuccess(Component.literal("已将秘密设置设置为：" + secret), true);
          * >     });
          * > ```
          * 
