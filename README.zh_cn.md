@@ -7,3 +7,4 @@
 ## 列表
 
 - [`ComponentStylizer`](./kubejs/startup_scripts/ComponentStylizer/README.zh_cn.md) - 用于方便地设置组件样式
+- [`RegCmd`](./kubejs/server_scripts/RegCmd/README.zh_cn.md) - 用于简化命令注册
