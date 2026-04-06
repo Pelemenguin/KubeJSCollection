@@ -138,6 +138,10 @@ let exported = {
         this.requirementPredicate = () => true;
         this.args = {};
         this.defaultValues = {};
+        this.defaultLiterals = [];
+        for (let i = 0; i < commandArguments.length; i++) {
+            this.defaultLiterals.push(null);
+        }
         this.parallelCommands = [];
         this.childrenCommands = [];
     },
@@ -520,84 +524,104 @@ Object.freeze(exported.ArgTypes);
 
 let CmdBuilder = exported.CmdBuilder;
 
+/** @type {RegCmd.CmdBuilder["buildNode"]} */
+CmdBuilder.prototype.buildNode = function(event, index, literalsSoFar, parentNode) {
+    if (index >= this.commandArguments.length) {
+        return null;
+    }
+    const Commands = event.getCommands();
+    let part = this.commandArguments[index];
+    let shouldExecute = (index == this.commandArguments.length - 1) || this.commandArguments[index + 1].optional;
+    let curLiterals = literalsSoFar.slice();
+    switch (part.type) {
+        case "LITERAL": {
+            let curNode = Commands.literal(part.literal);
+            curLiterals.push(part.literal);
+            this.buildNode(event, index + 1, curLiterals, curNode);
+            if (shouldExecute) {
+                for (let i = curLiterals.length; i < this.commandArguments.length; i++) {
+                    curLiterals.push(this.defaultLiterals[i]);
+                }
+                curNode.executes(context => this.executeFunction(context, this.genArgs(context), curLiterals));
+            }
+            if (parentNode != null) parentNode.then(curNode);
+            return [curNode];
+        }
+        case "MULTI_LITERAL": {
+            let nodes = [];
+            for (let literal of part.literals) {
+                let curcurLiterals = curLiterals.slice();
+                let curNode = Commands.literal(literal);
+                curcurLiterals.push(literal);
+                this.buildNode(event, index + 1, curcurLiterals, curNode);
+                if (shouldExecute) {
+                    for (let i = curcurLiterals.length; i < this.commandArguments.length; i++) {
+                        curcurLiterals.push(this.defaultLiterals[i]);
+                    }
+                    curNode.executes(context => this.executeFunction(context, this.genArgs(context), curcurLiterals));
+                }
+                if (parentNode != null) parentNode.then(curNode);
+                nodes.push(curNode);
+            }
+            return nodes;
+        }
+        case "ARGUMENT": {
+            /** @type {RegCmd.CommandArgumentType<any, any>} */
+            let type = this.args[part.name];
+            if (type == undefined) {
+                throw new Error(`No type specified for argument ${part.name}`);
+            }
+            let curNode = Commands.argument(part.name, type.getType(event.context));
+            curLiterals.push(null);
+            this.buildNode(event, index + 1, curLiterals, curNode);
+            if (shouldExecute) {
+                for (let i = curLiterals.length; i < this.commandArguments.length; i++) {
+                    curLiterals.push(this.defaultLiterals[i]);
+                }
+                curNode.executes(context => this.executeFunction(context, this.genArgs(context), curLiterals));
+            }
+            if (parentNode != null) parentNode.then(curNode);
+            return [curNode];
+        }
+    }
+};
+/** @type {RegCmd.CmdBuilder["genArgs"]} */
+CmdBuilder.prototype.genArgs = function(context) {
+    let args = {};
+    for (let arg in this.args) {
+        /** @type {RegCmd.CommandArgumentType<?, ?>} */
+        let type = this.args[arg];
+        let value;
+        try {
+            value = type.getValue(context, arg);
+        } catch (e) {
+            let def = this.defaultValues[arg];
+            if (def == undefined) {
+                value = undefined;
+            } else {
+                value = def()
+            }
+        }
+        args[arg] = value;
+    }
+    Object.freeze(args);
+    return args;
+};
 /** @type {RegCmd.CmdBuilder["registerToEvent"]} */
 CmdBuilder.prototype.registerToEvent = function(event, registerer, isRoot) {
-    const Commands = event.getCommands();
-
-    if (isRoot && this.commandArguments[0].type != "LITERAL") {
-        throw new Error("First argument must be a literal");
+    if (this.commandArguments.length == 0) {
+        throw new Error("Cannot register command with empty usage");
+    }
+    if (isRoot && this.commandArguments[0].type !== "LITERAL") {
+        throw new Error("Root command must start with a literal");
     }
 
-    /** @type {RegCmd.Alias.ArgumentBuilder<RegCmd.Alias.CommandSourceStack, RegCmd.Alias.ArgumentBuilder<?, ?>>[]} */
-    let cur = []; 
-    let last = null;
-    for (let i = this.commandArguments.length - 1; i >= 0; i--) {
-        let part = this.commandArguments[i];
-        switch (part.type) {
-            case "LITERAL": {
-                let created = Commands.literal(part.literal);
-                cur.forEach(a => created.then(a));
-                cur = [created];
-                break;
-            }
-            case "MULTI_LITERAL": {
-                let creating = [];
-                for (let literal of part.literals) {
-                    let created = Commands.literal(literal);
-                    cur.forEach(a => created.then(a));
-                    creating.push(created);
-                }
-                cur = creating;
-                break;
-            }
-            case "ARGUMENT": {
-                /** @type {RegCmd.CommandArgumentType<?, ?>} */
-                let type = this.args[part.name];
-                let created = Commands.argument(part.name, type.getType(event.context));
-                cur.forEach(a => created.then(a));
-                cur = [created];
-                break;
-            }
-            default: {
-                throw new Error(`Unknown argument type: ${part.type}`);
-            }
-        }
-
-        if (last == null || last.optional) {
-            cur.forEach(a => {
-                a.executes((context) => {
-                    let args = {};
-                    for (let arg in this.args) {
-                        /** @type {RegCmd.CommandArgumentType<?>} */
-                        let type = this.args[arg];
-                        let value;
-                        try {
-                            value = type.getValue(context, arg)
-                        } catch (e) {
-                            let def = this.defaultValues[arg];
-                            if (def == undefined) {
-                                value = undefined;
-                            } else {
-                                value = def()
-                            }
-                        }
-                        args[arg] = value;
-                    }
-                    Object.freeze(args);
-                    return this.executeFunction(context, args);
-                })
-            });
-        }
-
-        last = part;
-    }
-
-    cur.forEach(a => {
-        a.requires(this.requirementPredicate);
-        registerer(a)
+    let roots = this.buildNode(event, 0, [], null);
+    roots.forEach(c => {
+        registerer(c);
     });
 
-    this.parallelCommands.forEach(c => c.registerToEvent(event, registerer, isRoot));
+    this.parallelCommands.forEach(cmd => cmd.registerToEvent(event, registerer, isRoot));
 }
 /** @type {RegCmd.CmdBuilder["executes"]} */
 CmdBuilder.prototype.executes = function(executeFunction) {
@@ -638,12 +662,23 @@ CmdBuilder.prototype.requiresServerOwner = function() {
 CmdBuilder.prototype.argType = function(argName, type) {
     this.args[argName] = type;
     return this;
-}
+};
 /** @type {RegCmd.CmdBuilder["argDefault"]} */
 CmdBuilder.prototype.argDefault = function(argName, defaultValue) {
     this.defaultValues[argName] = defaultValue;
     return this;
-}
+};
+/** @type {RegCmd.CmdBuilder["literalDefault"]} */
+CmdBuilder.prototype.literalDefault = function(index, literal) {
+    if (index < 0 || index >= this.commandArguments.length) {
+        throw new Error("Literal default index out of bounds");
+    }
+    if (this.commandArguments[index].type !== "MULTI_LITERAL") {
+        throw new Error("Literal default can only be set for multi-literal arguments");
+    }
+    this.defaultLiterals[index] = literal;
+    return this;
+};
 /** @type {RegCmd.CmdBuilder["or"]} */
 CmdBuilder.prototype.or = function(usage) {
     let result = new CmdBuilder(exported.parseCommandUsage(usage));
@@ -656,7 +691,11 @@ CmdBuilder.prototype.or = function(usage) {
     result.requires(this.requirementPredicate);
     this.parallelCommands.push(result);
     return result;
-}
+};
+/** @type {RegCmd.CmdBuilder["then"]} */
+CmdBuilder.prototype.then = function(usage) {
+    // TODO
+};
 
 ServerEvents.commandRegistry(event => {
     for (let builder of ALL_BUILDERS) {
