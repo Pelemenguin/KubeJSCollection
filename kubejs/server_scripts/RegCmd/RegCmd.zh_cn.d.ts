@@ -25,100 +25,100 @@
  */
 
 /**
- * RegCmd is a KubeJS JavaScript library that simplifies command registration.
+ * RegCmd 是一个简化命令注册的 KubeJS JavaScript 库。
  * 
- * ## Usage
+ * ## 使用
  * 
- * ### Basic Commands
+ * ### 基础命令
  * 
- * Use {@linkcode RegCmd.defineCommand} to start defining a command.
+ * 使用 {@linkcode RegCmd.defineCommand} 以开始定义命令。
  * 
- * Take a simple `/example` command as an example:
+ * 以一个简单的 `/example` 命令为例：
  * 
  * > ```javascript
- * > RegCmd.defineCommand("/example") // command format
+ * > RegCmd.defineCommand("/example") // 命令格式
  * >     .executes((context) => {
- * >         // context.getSource().sendSuccess(Component, boolean) is the standard method provided by KubeJS to return a success message
- * >         // The true below means it will be broadcast to operators, e.g., cheat commands like /gamemode need to notify operators, so true is used
- * >         // For other normal commands that don't need to notify operators, false can be used
- * >         context.getSource().sendSuccess(Component.literal("Command executed!"), true);
- * >         // Command return value: greater than 0 indicates success, 0 indicates failure
+ * >         // context.getSource().sendSuccess(Component, boolean) 是 KubeJS 提供的标准的返回命令成功提示的方法
+ * >         // 下面的 true 表示会被广播给管理员，例如 /gamemode 这类作弊命令需要通知管理员的会使用 true
+ * >         // 而其它一些普通命令没必要通知管理员的可以填入 false
+ * >         context.getSource().sendSuccess(Component.literal("命令被执行！"), true);
+ * >         // 命令返回值，大于 0 表示成功，0 表示失败
  * >         return 1;
  * >     });
  * > ```
  * 
- * ### Literals
+ * ### 字面量
  * 
- * To include literals in a command, use the following format:
+ * 若希望在命令中加入字面量，使用以下格式：
  * 
  * > ```javascript
  * > RegCmd.defineCommand("/example literal")
  * >     .executes((context) => {
- * >         context.getSource().sendSuccess(Component.literal("You invoked /example literal!"), true);
+ * >         context.getSource().sendSuccess(Component.literal("你调用了 /example literal！"), true);
  * >         return 1;
  * >     });
  * > ```
  * 
- * Commands defined this way must be invoked as `/example literal`; the word `literal` cannot be changed.
+ * 这样定义的命令必须以 `/example literal` 被调用，不能更改 `literal` 这个单词。
  * 
- * ### Choice Literals
+ * ### 选择字面量
  * 
- * You can add choice literals using the `(literalA|literalB)` form. The following command can be invoked either as `/greet hello` or `/greet goodbye`:
+ * 可以通过 `(字面量A|字面量B)` 的形式添加选择字面量。下面的命令要么以 `/greet hello` 被调用，要么以 `/greet goodbye` 被调用：
  * 
  * > ```javascript
  * > RegCmd.defineCommand("/greet (hello|goodbye)")
  * >     .executes((context) => {
- * >         context.getSource().sendSuccess(Component.literal("But I don't know whether it's hello or goodbye"), true);
+ * >         context.getSource().sendSuccess(Component.literal("但是我不知道是 hello 还是 goodbye"), true);
  * >         return 1;
  * >     });
  * > ```
  * 
- * To know which literal was chosen, use the third parameter of the callback function:
+ * 为了知道选择的字面量，使用回调函数的第三个参数来获取选择的字面量：
  * 
  * > ```javascript
  * > RegCmd.defineCommand("/greet (hello|goodbye)")
  * >     .executes((context, args, literals) => {
- * >         const greetType = literals[1]; // get the literal at index 1
+ * >         const greetType = literals[1]; // 获取索引为 1 的字面量
  * >         if (greetType == "hello") {
- * >             context.getSource().sendSuccess(Component.literal("Hello!"), true);
+ * >             context.getSource().sendSuccess(Component.literal("你好啊！"), true);
  * >         } else {
- *             context.getSource().sendSuccess(Component.literal("Goodbye!"), true);
+ * >             context.getSource().sendSuccess(Component.literal("再见！"), true);
  * >         }
  * >         return 1;
  * >     });
  * > ```
  * 
- * ### Literal Index
+ * ### 字面量索引
  * 
- * Literal indices start counting from the root command as `0`, for example:
+ * 字面量的索引以根命令为 `0` 开始计数，例如：
  * 
  * > ```text
  * > /example literal (hello|goodbye) third
  * >  0       1       2               3
  * > ```
  * 
- * That is:
+ * 这就是说：
  * 
  * > ```javascript
  * > RegCmd.defineCommand("/example literal (hello|goodbye) third")
  * >     .executes((context, args, literal) => {
  * >         literal[0] // -> "example"
  * >         literal[1] // -> "literal"
- * >         literal[2] // -> "hello" or "goodbye", depending on the player's input
+ * >         literal[2] // -> "hello" 或 "goodbye"，取决于玩家调用命令时的输入
  * >         literal[3] // -> "third"
  * >     });
  * > ```
  * 
- * ### Command Arguments
+ * ### 命令参数
  * 
- * You can use `<argumentName>` in the command format to define arguments, and use {@linkcode CmdBuilder.argType} to specify the argument type:
+ * 命令格式中可以使用 `<参数名>` 来定义参数，并使用 {@linkcode CmdBuilder.argType} 来定义参数类型：
  * 
  * > ```javascript
  * > RegCmd.defineCommand("/double <num>")
- * >     // define the argument num as an integer type:
+ * >     // 定义参数 num 是一个整数类型：
  * >     .argType("num", RegCmd.ArgTypes.integer())
  * >     .executes((context, args) => {
- * >         // args already contains the command arguments for you
+ * >         // args 中已经帮你加载好了命令中的参数
  * >         const { num } = args;
  * >         let result = num * 2;
  * >         context.getSource().sendSuccess(Component.literal(result.toFixed()));
@@ -126,7 +126,7 @@
  * >     });
  * > ```
  * 
- * You can also define multiple arguments and mix them with literals:
+ * 也可以定义多个参数，以及与字面量混合使用：
  * 
  * > ```javascript
  * > RegCmd.defineCommand("/calc add <int1> <int2>")
@@ -140,45 +140,45 @@
  * >     });
  * > ```
  * 
- * The argument types shown here ({@linkcode ArgTypes.integer}, {@linkcode ArgTypes.integerAbove}) and more available argument types can be found in {@linkcode ArgTypes}.
+ * 这里出现的参数类型（{@linkcode ArgTypes.integer}，{@linkcode ArgTypes.integerAbove}）以及更多可用的参数类型，参见 {@linkcode ArgTypes}。
  * 
- * ### Optional Literals and Optional Arguments
+ * ### 可选字面量与可选参数
  * 
- * Use `[]` to indicate optional parts. The optional variants for each command format are shown in the table below:
+ * 使用 `[]` 表示可选。各命令格式的可选变体如下表所示：
  * 
- * |      Command Format     |     Optional Variant     |
- * |:------------------------|:-------------------------|
- * |`literal`                |`[literal]`               |
- * |`(literalA\|literalB)`   |`[literalA\|literalB]`    |
- * |`<argumentName>`         |`[<argumentName>]`        |
+ * |      命令格式      |      可选变体      |
+ * |:-------------------|:-------------------|
+ * |`字面量`            |`[字面量]`          |
+ * |`(字面量A\|字面量B)`|`[字面量A\|字面量B]`|
+ * |`<参数名>`          |`[<参数名>]`        |
  * 
- * When an optional argument is not specified in the command input, its value will be `null`.
+ * 当一个可选参数未在命令填入时指定，则该项为 `null`。
  * 
  * > ```javascript
  * > RegCmd.defineCommand("/greet [hello|goodbye]")
  * >     .executes((context, args, literals) => {
  * >         const greetType = literals[1];
  * >         if (greetType == null) {
- * >             context.getSource().sendSuccess(Component.literal("I don't know if you just arrived or are leaving :("), true);
+ * >             context.getSource().sendSuccess(Component.literal("我不知道你是刚来还是要走 :("), true);
  * >             return 0;
  * >         }
  * >         if (greetType == "hello") {
- * >             context.getSource().sendSuccess(Component.literal("Hello!"), true);
+ * >             context.getSource().sendSuccess(Component.literal("你好啊！"), true);
  * >         } else {
- * >             context.getSource().sendSuccess(Component.literal("Goodbye!"), true);
+ * >             context.getSource().sendSuccess(Component.literal("再见！"), true);
  * >         }
  * >         return 1;
  * >     });
  * > ```
  * 
- * ### Default Values for Optional Literals and Optional Arguments
+ * ### 可选字面量与可选参数的默认值
  * 
- * {@linkcode CmdBuilder.argDefault} and {@linkcode CmdBuilder.literalDefault} can be used to set default values for optional arguments and optional literals respectively.
+ * {@linkcode CmdBuilder.argDefault} 与 {@linkcode CmdBuilder.literalDefault} 能够分别设置可选参数与可选字面量的默认值。
  * 
  * > ```javascript
  * > RegCmd.defineCommand("/calc add <int1> [<int2>]")
  * >     .argType("int1", RegCmd.ArgTypes.integerAbove(0))
- * >     .argType("int2", RegCmd.ArgTypes.integerAbove(0)).argDefault("int2", () => 0) // if int2 is not specified, default to 0
+ * >     .argType("int2", RegCmd.ArgTypes.integerAbove(0)).argDefault("int2", () => 0) // 若 int2 未指定，则默认为 0
  * >     .executes((context, args) => {
  * >         const { int1, int2 } = args;
  * >         let result = int1 + int2;
@@ -186,19 +186,19 @@
  * >         return result;
  * >     });
  * > RegCmd.defineCommand("/greet [hello|goodbye]")
- * >     .literalDefault(1, "hello") // if the literal at index 1 is not chosen, default to hello
- * >     // Cannot set a default value for a literal that cannot be chosen, e.g., the literal at index 0 "greet"
+ * >     .literalDefault(1, "hello") // 若索引为 1 的字面量未选择，则默认为 hello
+ * >     // 不能为无法选择的字面量设置默认值，例如这里索引 0 处的 greet
  * >     .executes((context, args, literals) => {
  * >         if (literals[1] == "hello") {
- * >             context.getSource().sendSuccess(Component.literal("Hello!"), true);
+ * >             context.getSource().sendSuccess(Component.literal("你好！"), true);
  * >         } else {
- * >             context.getSource().sendSuccess(Component.literal("Goodbye!"), true);
+ * >             context.getSource().sendSuccess(Component.literal("再见！"), true);
  * >         }
  * >         return result;
  * >     });
  * > ```
  * 
- * You can place required arguments after optional ones:
+ * 可以在可选参数后面放置必选参数：
  * 
  * > ```javascript
  * > let secretValue = 0;
@@ -206,66 +206,66 @@
  * >     .argType("value", RegCmd.ArgTypes.integer())
  * >     .executes((context, args, literals) => {
  * >         if (literals[1] == null) {
- * >             context.getSource().sendSuccess(Component.literal("Your secret value is: " + secretValue.toFixed()), true);
+ * >             context.getSource().sendSuccess(Component.literal("你的秘密数值是：" + secretValue.toFixed()), true);
  * >         } else {
  * >             const newValue = args.value;
  * >             secretValue = newValue;
- * >             context.getSource().sendSuccess(Component.literal("Secret value set to: " + secretValue.toFixed()), true);
+ * >             context.getSource().sendSuccess(Component.literal("已将秘密设置设置为：" + secretValue.toFixed()), true);
  * >         }
  * >         return 1;
  * >     });
  * > ```
  * 
- * `/secret [set] <value>` means: you can invoke it as `/secret` (because `[set]` is optional);
- * but you cannot invoke it as `/secret set` because there is a required argument `<value>` after the optional literal `[set]`.
+ * `/secret [set] <value>` 表示：可以以 `/secret` 调用（因为 `[set]` 可选）；
+ * 但是不能以 `/secret set` 调用，因为 `[set]` 可选字面量后有一个必选参数 `<value>`。
  * 
- * That is: either invoke it as `/secret`, or as `/secret set <value>`.
+ * 即：要么以 `/secret` 调用，要么以 `/secret set <value>` 调用。
  * 
- * It is worth noting that when invoked as `/secret`, the value of `<value>` will be `null`.
- * That means a required argument is **not always non-null**; if a required argument is preceded by optional arguments, it may be `null`.
+ * 这里值得注意的是：当以 `/secret` 调用时，`<value>` 的值将会为 `null`。
+ * 也就是说，一个必选参数**并不一定恒不为 `null`**；如果这个必选参数前面存在可选参数，那么这个必选参数是有可能为 `null` 的。
  * 
- * ### Command Requirements
+ * ### 命令要求
  * 
- * Some commands have cheat properties and may affect other players on the server. In such cases, you can set requirements to restrict execution to players who meet certain conditions.
+ * 有些命令带有作弊属性，可能对服务器上其它玩家造成影响，这时就可以通过设置要求来限定只有满足要求的玩家才能执行命令。
  * 
- * Use {@linkcode CmdBuilder.requires} to set a requirement:
+ * 使用 {@linkcode CmdBuilder.requires} 限定要求：
  * 
  * > ```javascript
  * > RegCmd.defineCommand("/accelerate <motion>")
  * >     .argType("motion", RegCmd.ArgTypes.vec3())
- * >     // player must have at least permission level 2 to execute (typically cheat commands)
+ * >     // 玩家至少有 2 级权限才能执行（一般作弊命令的权限）
  * >     .requires(s => s.hasPermission(2))
  * >     .executes((context, args) => {
  * >         let player = context.getSource().getPlayer();
  * >         if (player == null) {
- * >             context.getSource().sendFailure(Component.literal("Caller is not a player"), true);
+ * >             context.getSource().sendFailure(Component.literal("调用者不是玩家"), true);
  * >             return 0;
  * >         }
  * >         player.addDeltaMovement(args.motion);
- * >         context.getSource().sendFailure(Component.literal("Added acceleration to the caller"), true);
+ * >         context.getSource().sendFailure(Component.literal("已对调用者添加加速度"), true);
  * >         return 1;
  * >     });
  * > ```
  * 
- * Alternatively, use the predefined {@linkcode CmdBuilder.requiresOperator} method, which is equivalent to `.requires(s => s.hasPermission(2))`:
+ * 或者使用预设好的 {@linkcode CmdBuilder.requiresOperator} 方法，这与 `.requires(s => s.hasPermission(2))` 是等价的：
  * 
  * > ```javascript
  * > RegCmd.defineCommand("/accelerate <motion>")
  * >     .argType("motion", RegCmd.ArgTypes.vec3())
  * >     .requiresOperator()
- * >     // rest of the content
+ * >     // 后续内容
  * > ```
  * 
- * ### Command Branches
+ * ### 命令分支
  * 
- * Use {@linkcode CmdBuilder.or} or {@linkcode CmdBuilder.then} methods to create branches.
- * For detailed usage, refer to the documentation of these methods.
+ * 使用 {@linkcode CmdBuilder.or} 或 {@linkcode CmdBuilder.then} 方法来创建分支。
+ * 具体使用方法参见这两个方法的文档。
  * 
- * ## Type Definitions
+ * ## 类型定义
  * 
- * Since both ProbeJS 6 and ProbeJS 7 exist on Minecraft 1.20.1,
- * the type definition files they generate are vastly different in format.
- * To get correct type hints, you can go to the {@linkcode Alias} namespace and change the aliases to match the type definitions generated by your own ProbeJS.
+ * 由于在 Minecraft 1.20.1 版本上同时存在 ProbeJS 6 与 ProbeJS 7，
+ * 它们生成的类型定义文件格式大相径庭。
+ * 为了获得正确的类型提示，可以前往 {@linkcode Alias} 命名空间更改别名以匹配你自己的 ProbeJS 生成的类型定义。
  * 
  * ---
  * 
@@ -277,10 +277,10 @@
 declare namespace RegCmd {
 
     /**
-     * Predefined aliases for documentation.
+     * 为文档而预定义的别名。
      * 
-     * If these do not match the files generated by ProbeJS,
-     * you can change them here to ensure your documentation works properly.
+     * 如果这些与 ProbeJS 生成的文件不匹配，
+     * 你可以更改这里以确保你的文档能正常工作。
      */
     namespace Alias {
 
@@ -417,15 +417,15 @@ declare namespace RegCmd {
     }
 
     /**
-     * Class for building command definitions.
+     * 构建命令定义的类。
      */
     class CmdBuilder<P extends {[argName: string]: CommandArgumentType<unknown, unknown>}> {
         /**
-         * Constructs a new `CmdBuilder`.
+         * 构建一个新的 `CmdBuilder`。
          * 
-         * **Note**: A `CmdBuilder` created via the constructor will not be automatically registered. Use {@linkcode defineCommand} instead.
+         * **注意**：通过构造函数创建的 `CmdBuilder` 不会主动注册。改为使用 {@linkcode defineCommand}。
          * 
-         * @param commandArguments An array of parsed command arguments obtained via {@linkcode parseCommandUsage}
+         * @param commandArguments 通过 {@linkcode parseCommandUsage} 获得的命令参数数组
          */
         constructor(commandArguments: ParsedArgument[]);
         protected commandArguments: ParsedArgument[];
@@ -439,91 +439,91 @@ declare namespace RegCmd {
         protected buildNode(event: Alias.CommandRegistryEventJS, index: number, literalsSoFar: string[], parentNode: Alias.ArgumentBuilder<Alias.CommandSourceStack, any>, childrenRoots: Alias.ArgumentBuilder<Alias.CommandSourceStack, any>[]): Alias.ArgumentBuilder<Alias.CommandSourceStack, any>[]?;
         protected genArgs(context: Alias.CommandContext<Alias.CommandSourceStack>): Readonly<{[argName in keyof P]: P[argName] extends CommandArgumentType<any, infer R> ? R : never}>;
         /**
-         * Sets the command's execution function.
+         * 设置命令的执行函数。
          * 
-         * The execution function takes three parameters: `context`, `args`, and `literals`.
-         * `context` is the command execution context, same as the parameter required by the `executes` method in KubeJS command registration.
-         * `args` contains the extracted command arguments, and `literals` is an array of literals for the current command branch.
+         * 执行函数需要三个参数：`context`、`args`，与 `literals`。
+         * 其中，`context` 是命令执行的上下文，与 KubeJS 提供的命令注册中 `executes` 方法所需要的回调的参数相同。
+         * `args` 是提取出的命令参数，`literals` 是当前命令分支的字面量数组。
          * 
-         * See the {@link RegCmd `RegCmd` module documentation} for more detailed usage.
+         * 前往 {@link RegCmd `RegCmd` 的模块文档}以查看更详细的用法。
          * 
-         * @param executeFunction The execution function
-         * @return                The current `CmdBuilder` instance
+         * @param executeFunction 执行函数
+         * @return                当前 `CmdBuilder` 实例
          */
         executes(executeFunction: (context: Alias.CommandContext<Alias.CommandSourceStack>, args: Readonly<{[argName in keyof P]: P[argName] extends CommandArgumentType<any, infer R> ? R : never}>, literals: (string | null)[]) => number): this;
         /**
-         * Clears all current command requirements.
+         * 清除当前所有命令要求。
          * 
-         * Useful when branches created by {@linkcode or} or {@linkcode then} have different requirements than the root command.
+         * 适用于当 {@linkcode or} 或 {@linkcode then} 方法产生的分支与根命令要求不相同时。
          * 
-         * @return The current `CmdBuilder` instance
+         * @return 当前 `CmdBuilder` 实例
          */
         clearRequirements(): this;
         /**
-         * Adds a predicate to check permissions or other requirements for command execution.
+         * 添加一个谓词，用于检查命令执行的权限等要求。
          * 
-         * @param requirementPredicate A function that accepts a `CommandSourceStack` as a parameter and returns a boolean indicating whether the command execution requirements are met.
-         * @return                     The current `CmdBuilder` instance
+         * @param requirementPredicate 一个函数，接受一个 `CommandSourceStack` 作为参数，并返回一个布尔值，表示是否满足执行命令的要求。
+         * @return                     当前 `CmdBuilder` 实例
          */
         requires(requirementPredicate: (context: Alias.CommandSourceStack) => boolean): this;
         /**
-         * Requires the executing player to have at least permission level 1.
+         * 要求执行命令的玩家至少具有权限等级 1。
          * 
-         * No vanilla Minecraft commands use this permission level.
+         * 原版 Minecraft 中没有任何命令是此权限等级的。
          * 
-         * @return The current `CmdBuilder` instance
+         * @return 当前 `CmdBuilder` 实例
          */
         requiresModerator(): this;
         /**
-         * Requires the executing player to have operator permissions (permission level 2).
+         * 要求执行命令的玩家至少具有操作员权限（权限等级 2）。
          * 
-         * Most vanilla cheat commands (such as `/gamemode`) require this permission level.
+         * 原版 Minecraft 中大多数作弊命令（如 `/gamemode`）都需要此权限等级。
          * 
-         * @return The current `CmdBuilder` instance
+         * @return 当前 `CmdBuilder` 实例
          */
         requiresOperator(): this;
         /**
-         * Requires the executing player to have admin permissions (permission level 3).
+         * 要求执行命令的玩家至少具有管理员权限（权限等级 3）。
          * 
-         * Some server management commands in vanilla Minecraft (such as `/op`, `/deop`) require this permission level.
+         * 原版 Minecraft 中一些管理服务器的命令（如 `/op`，`/deop` 等）需要此权限等级。
          * 
-         * @return The current `CmdBuilder` instance
+         * @return 当前 `CmdBuilder` 实例
          */
         requiresServerAdmin(): this;
         /**
-         * Requires the executing player to be the server owner (permission level 4).
+         * 要求执行命令的玩家必须是服务器拥有者（权限等级 4）。
          * 
-         * Some commands that directly control the server in vanilla Minecraft (such as `/stop`) require this permission level.
+         * 原版 Minecraft 中一些直接控制服务器的命令（如 `/stop`）需要此权限等级。
          * 
-         * @return The current `CmdBuilder` instance
+         * @return 当前 `CmdBuilder` 实例
          */
         requiresServerOwner(): this;
         /**
-         * Specifies the type of an argument in the command.
+         * 指定一个命令中的参数的类型。
          * 
-         * @param argName The argument name
-         * @param type    The argument type, obtained using methods in {@linkcode ArgTypes}
-         * @return        The current `CmdBuilder` instance, with updated type parameter
+         * @param argName 参数名
+         * @param type    参数类型，使用 {@linkcode ArgTypes} 中的方法来获得各种类型的参数
+         * @return        当前 `CmdBuilder` 实例，并更新类型参数
          */
         argType<S extends string, T, R>(argName: S, type: CommandArgumentType<T, R>): CmdBuilder<Omit<P, S> & {[s in S]: CommandArgumentType<T, R>}>;
         /**
-         * Sets a default value for an optional argument.
+         * 为一个可选参数设置默认值。
          * 
-         * @param argName      The argument name
-         * @param defaultValue A function that returns the default value when the argument is not specified in the command. The type matches the type set for this argument via {@linkcode argType}.
+         * @param argName      参数名
+         * @param defaultValue 一个函数，返回当该参数未在命令中指定时的默认值。参数类型与 {@linkcode argType} 中为该参数设置的类型一致。
          */
         argDefault<S extends keyof P>(argName: S, defaultValue: () => P[S] extends CommandArgumentType<any, infer R> ? R : never): this;
         /**
-         * Sets a default value for an optional literal.
+         * 为一个可选字面量设置默认值。
          * 
-         * @param index   The literal index
-         * @param literal The default value
+         * @param index   字面量索引
+         * @param literal 默认值
          */
         literalDefault(index: number, literal: string): this;
         /**
-         * Creates a parallel branch to the current command. The new branch shares the parent command and command arguments with the current branch, but not the literals or execution function.
+         * 创建一个与当前命令平行的分支。新分支与当前分支共享父命令和命令参数，但不共享字面量和执行函数。
          * 
-         * For example:
+         * 例如：
          * 
          * > ```javascript
          * > RegCmd.defineCommand("/calculator add <int1> [<int2>]")
@@ -536,7 +536,7 @@ declare namespace RegCmd {
          * >         return result;
          * >     })
          * >     .or("/calculator sub <int1> <int2>")
-         * >     // parallel command branches created via or inherit all argument types and default values from the original
+         * >     // 通过 or 创建的平行命令分支会继承原先的所有参数类型与默认值
          * >     .executes((context, args) => {
          * >         const { int1, int2 } = args;
          * >         let result = int1 - int2;
@@ -545,33 +545,33 @@ declare namespace RegCmd {
          * >     });
          * > ```
          * 
-         * @param usage The command format of the new branch, following the same rules as in {@linkcode defineCommand}
-         * @return      A new `CmdBuilder` instance representing the new branch
+         * @param usage 新分支的命令格式，格式规则与 {@linkcode defineCommand} 中的命令格式相同
+         * @return      新的 `CmdBuilder` 实例，代表新分支
          */
         or(usage: string): CmdBuilder<P>;
         /**
-         * Creates a new child command branch. The new branch takes the current command as its parent and inherits all argument types and default values from the current command, but does not share literals or the execution function.
+         * 创建一个新的子命令分支。新分支以当前命令为父命令，并继承当前命令的所有参数类型与默认值，但不共享字面量和执行函数。
          * 
-         * For example:
+         * 例如： 
          * 
          * > ```javascript
          * > let secret = 0;
          * > RegCmd.defineCommand("/secret")
          * >     .executes((context) => {
-         * >         context.getSource().sendSuccess(Component.literal("Your secret value is: " + secret.toFixed()), true);
+         * >         context.getSource().sendSuccess(Component.literal("你的秘密数值是：" + secret.toFixed()), true);
          * >         return 1;
          * >     })
          * >     .then("set <value>")
          * >     .executes((context, args) => {
          * >         const newValue = args.value;
          * >         secret = newValue;
-         * >         context.getSource().sendSuccess(Component.literal("Secret value set to: " + secret.toFixed()), true);
+         * >         context.getSource().sendSuccess(Component.literal("已将秘密设置设置为：" + secret.toFixed()), true);
          * >     });
          * > ```
          * 
-         * This actually creates two command usages: `/secret` and `/secret set <value>`.
+         * 这实际上会创建两个命令用法：`/secret` 与 `/secret set <value>`。
          * 
-         * **Note**: Literal indices are recalculated starting from the child branch. That is, in the example above, the index of `<value>` is `1`, not `2`.
+         * **注意**：自变量索引是从子命令分支开始重新计算的，也就是说，在上面的例子中，`<value>` 的索引为 `1`，而不是 `2`。
          * 
          * > ```javascript
          * > let secret = 0;
@@ -581,514 +581,514 @@ declare namespace RegCmd {
          * >     })
          * >     .then("set <value>")
          * >     .executes((context, args, literals) => {
-         * >         literals[0]; // -> "set", not "secret"
-         * >         literals[1]; // -> null, because `set` is an argument, not a literal
+         * >         literals[0]; // -> "set"，而不是 "secret"
+         * >         literals[1]; // -> null，因为 `set` 是一个参数，而不是一个字面量
          * >     });
          * > ```
          * 
-         * @param usage The command format of the new branch, following the same rules as in {@linkcode defineCommand}
-         * @return      A new `CmdBuilder` instance representing the new branch
+         * @param usage 新分支的命令格式，格式规则与 {@linkcode defineCommand} 中的命令格式相同
+         * @return      新的 `CmdBuilder` 实例，代表新分支
          */
         then(usage: string): CmdBuilder<P>;
         /**
-         * Registers the current `CmdBuilder` instance into a `CommandRegistryEventJS` event.
+         * 将当前 `CmdBuilder` 实例注册到一个 `CommandRegistryEventJS` 事件中。
          * 
-         * Usually you don't need to call this method directly, because the `CmdBuilder` produced by {@linkcode defineCommand} automatically calls it during command registration.
+         * 通常不需要直接调用这个方法，因为通过 {@linkcode defineCommand} 产生的 `CmdBuilder` 会在命令注册时自动调用它。
          * 
-         * @param event      The event to register to
-         * @param registerer A function that accepts an `ArgumentBuilder` as a parameter, used to register the root node of the current command into the event. For a root command, this `registerer` is `(c) => event.register(c)`
-         * @param isRoot     A boolean indicating whether the current `CmdBuilder` is the root command.
+         * @param event      要注册到的事件
+         * @param registerer 一个函数，接受一个 `ArgumentBuilder` 作为参数，用于将当前命令的根节点注册到事件中。对于根命令，这个 `registerer` 是 `(c) => event.register(c)`
+         * @param isRoot     一个布尔值，表示当前 `CmdBuilder` 是否为根命令。
          */
         registerToEvent(event: Alias.CommandRegistryEventJS, registerer: (command: Alias.ArgumentBuilder<Alias.CommandSourceStack, any>) => void, isRoot: boolean): void;
     }
 
     /**
-     * All built-in command argument types.
+     * 所有内置命令参数类型。
      */
     namespace ArgTypes {
         /**
-         * Boolean argument type.
+         * 布尔值参数类型。
          * 
-         * If a command argument `<arg>` is of this type, `<arg>` must be `true` or `false`.
+         * 若命令参数 `<arg>` 为该类型，则 `<arg>` 必须为 `true` 或 `false`。
          * 
-         * @return The created type
+         * @return 创建的类型
          */
         function bool(): CommandArgumentType<boolean, boolean>;
         /**
-         * Double-precision floating point argument type (no range restriction).
+         * 双精度浮点数参数类型（无范围限制）。
          * 
-         * Accepts any double-precision floating point number (e.g., `1.5`, `-2.3`).
+         * 可接受任意双精度浮点数（例如 `1.5`、`-2.3`）。
          * 
-         * @return The created type
+         * @return 创建的类型
          */
         function double(): CommandArgumentType<number, number>;
         /**
-         * Double-precision floating point argument type (bounded range, inclusive).
+         * 双精度浮点数参数类型（限定范围，包含端点）。
          * 
-         * @param min Minimum value (inclusive)
-         * @param max Maximum value (inclusive)
-         * @return The created type
+         * @param min 最小值（包含）
+         * @param max 最大值（包含）
+         * @return 创建的类型
          */
         function doubleBetween(min: number, max: number): CommandArgumentType<number, number>;
         /**
-         * Double-precision floating point argument type (greater than or equal to minimum).
+         * 双精度浮点数参数类型（大于等于最小值）。
          * 
-         * @param min Minimum value (inclusive)
-         * @return The created type
+         * @param min 最小值（包含）
+         * @return 创建的类型
          */
         function doubleAbove(min: number): CommandArgumentType<number, number>;
         /**
-         * Double-precision floating point argument type (less than or equal to maximum).
+         * 双精度浮点数参数类型（小于等于最大值）。
          * 
-         * @param max Maximum value (inclusive)
-         * @return The created type
+         * @param max 最大值（包含）
+         * @return 创建的类型
          */
         function doubleBelow(max: number): CommandArgumentType<number, number>;
         /**
-         * Single-precision floating point argument type (no range restriction).
+         * 单精度浮点数参数类型（无范围限制）。
          * 
-         * @return The created type
+         * @return 创建的类型
          */
         function float(): CommandArgumentType<number, number>;
         /**
-         * Single-precision floating point argument type (bounded range, inclusive).
+         * 单精度浮点数参数类型（限定范围，包含端点）。
          * 
-         * @param min Minimum value (inclusive)
-         * @param max Maximum value (inclusive)
-         * @return The created type
+         * @param min 最小值（包含）
+         * @param max 最大值（包含）
+         * @return 创建的类型
          */
         function floatBetween(min: number, max: number): CommandArgumentType<number, number>;
         /**
-         * Single-precision floating point argument type (greater than or equal to minimum).
+         * 单精度浮点数参数类型（大于等于最小值）。
          * 
-         * @param min Minimum value (inclusive)
-         * @return The created type
+         * @param min 最小值（包含）
+         * @return 创建的类型
          */
         function floatAbove(min: number): CommandArgumentType<number, number>;
         /**
-         * Single-precision floating point argument type (less than or equal to maximum).
+         * 单精度浮点数参数类型（小于等于最大值）。
          * 
-         * @param max Maximum value (inclusive)
-         * @return The created type
+         * @param max 最大值（包含）
+         * @return 创建的类型
          */
         function floatBelow(max: number): CommandArgumentType<number, number>;
         /**
-         * Integer argument type (no range restriction).
+         * 整数参数类型（无范围限制）。
          * 
-         * @return The created type
+         * @return 创建的类型
          */
         function integer(): CommandArgumentType<number, number>;
         /**
-         * Integer argument type (bounded range, inclusive).
+         * 整数参数类型（限定范围，包含端点）。
          * 
-         * @param min Minimum value (inclusive)
-         * @param max Maximum value (inclusive)
-         * @return The created type
+         * @param min 最小值（包含）
+         * @param max 最大值（包含）
+         * @return 创建的类型
          */
         function integerBetween(min: number, max: number): CommandArgumentType<number, number>;
         /**
-         * Integer argument type (greater than or equal to minimum).
+         * 整数参数类型（大于等于最小值）。
          * 
-         * @param min Minimum value (inclusive)
-         * @return The created type
+         * @param min 最小值（包含）
+         * @return 创建的类型
          */
         function integerAbove(min: number): CommandArgumentType<number, number>;
         /**
-         * Integer argument type (less than or equal to maximum).
+         * 整数参数类型（小于等于最大值）。
          * 
-         * @param max Maximum value (inclusive)
-         * @return The created type
+         * @param max 最大值（包含）
+         * @return 创建的类型
          */
         function integerBelow(max: number): CommandArgumentType<number, number>;
         /**
-         * Long integer argument type (no range restriction).
+         * 长整型参数类型（无范围限制）。
          * 
-         * @return The created type
+         * @return 创建的类型
          */
         function long(): CommandArgumentType<number, number>;
         /**
-         * Long integer argument type (bounded range, inclusive).
+         * 长整型参数类型（限定范围，包含端点）。
          * 
-         * @param min Minimum value (inclusive)
-         * @param max Maximum value (inclusive)
-         * @return The created type
+         * @param min 最小值（包含）
+         * @param max 最大值（包含）
+         * @return 创建的类型
          */
         function longBetween(min: number, max: number): CommandArgumentType<number, number>;
         /**
-         * Long integer argument type (greater than or equal to minimum).
+         * 长整型参数类型（大于等于最小值）。
          * 
-         * @param min Minimum value (inclusive)
-         * @return The created type
+         * @param min 最小值（包含）
+         * @return 创建的类型
          */
         function longAbove(min: number): CommandArgumentType<number, number>;
         /**
-         * Long integer argument type (less than or equal to maximum).
+         * 长整型参数类型（小于等于最大值）。
          * 
-         * @param max Maximum value (inclusive)
-         * @return The created type
+         * @param max 最大值（包含）
+         * @return 创建的类型
          */
         function longBelow(max: number): CommandArgumentType<number, number>;
         /**
-         * Quoted string argument type (allows spaces, but must be enclosed in double quotes).
+         * 普通字符串参数类型（允许空格，但需要用双引号包裹）。
          * 
-         * For example: `"hello world"`.
+         * 例如：`"hello world"`。
          * 
-         * @return The created type
+         * @return 创建的类型
          */
         function string(): CommandArgumentType<string, string>;
         /**
-         * Word string argument type (no spaces allowed, allows `-._+`).
+         * 单词字符串参数类型（不允许空格，允许 `-._+`）。
          * 
-         * Suitable for identifiers, player names, etc.
+         * 适合用于标识符、玩家名等。
          * 
-         * @return The created type
+         * @return 创建的类型
          */
         function word(): CommandArgumentType<string, string>;
         /**
-         * Greedy string argument type (consumes all remaining input, must be placed at the end of the command).
+         * 贪婪字符串参数类型（消耗剩余所有输入，必须放在命令末尾）。
          * 
-         * For example: in `/say <message>`, `<message>` could use a greedy string.
-         * (However, in vanilla Minecraft, the `/say` command uses a {@linkcode message} type to support target selectors. See {@linkcode message})
+         * 例如：`/say <message>` 中 `<message>` 可使用贪婪字符串。
+         * （但是在原版 Minecraft 中，`/say` 命令的参数为一个 {@linkcode message} 类型以支持目标选择器。参见 {@linkcode message}）
          * 
-         * @return The created type
+         * @return 创建的类型
          */
         function greedyString(): CommandArgumentType<string, string>;
         /**
-         * Angle argument type (e.g., `~`, `~5`, `10`).
+         * 角度参数类型（例如 `~`、`~5`、`10`）。
          * 
-         * Represents horizontal rotation angle: -180.0 for north, -90.0 for east, 0.0 for south, 90.0 for west, 180.0 for north.
+         * 表示水平旋转角度。-180.0为北，-90.0为东，0.0为南，90.0为西，180.0为北。
          * 
-         * @return The created type; the return value is a `number` (angle value)
+         * @return 创建的类型，返回值类型为 `number`（角度值）
          */
         function angle(): CommandArgumentType<Alias.AngleArgument$SingleAngle, number>;
         /**
-         * Block position argument type (e.g., `0 0 0`, `~1 ~2 ~-3`).
+         * 方块坐标参数类型（例如 `0 0 0`、`~1 ~2 ~-3`）。
          * 
-         * @return The created type; the return value is `BlockPos`
+         * @return 创建的类型，返回值类型为 `BlockPos`
          */
         function blockPos(): CommandArgumentType<Alias.Coordinates, Alias.BlockPos>;
         /**
-         * Block predicate argument type (e.g., `minecraft:stone`, `#minecraft:logs`, `minecraft:oak_fence[waterlogged=true]`).
+         * 方块谓词参数类型（例如 `minecraft:stone`、`#minecraft:logs`、`minecraft:oak_fence[waterlogged=true]`）。
          * 
-         * @return The created type; the return value is `Predicate<BlockInWorld>`
+         * @return 创建的类型，返回值类型为 `Predicate<BlockInWorld>`
          */
         function blockPredicate(): CommandArgumentType<Alias.BlockPredicateArgument$Result, Alias.Predicate<Alias.BlockInWorld>>;
         /**
-         * Block state argument type (e.g., `minecraft:stone`, `minecraft:oak_fence[waterlogged=true]`).
+         * 方块状态参数类型（例如 `minecraft:stone`、`minecraft:oak_fence[waterlogged=true]`）。
          * 
-         * @return The created type; the return value is `BlockInput`
+         * @return 创建的类型，返回值类型为 `BlockInput`
          */
         function blockState(): CommandArgumentType<Alias.BlockInput, Alias.BlockInput>;
         /**
-         * Color argument type (e.g., `red`, `blue`, `gold`).
+         * 颜色参数类型（例如 `red`、`blue`、`gold`）。
          * 
-         * Parses to a Minecraft chat color enum.
+         * 解析为 Minecraft 聊天颜色枚举。
          * 
-         * @return The created type; the return value is `ChatFormatting`
+         * @return 创建的类型，返回值类型为 `ChatFormatting`
          */
         function color(): CommandArgumentType<Alias.ChatFormatting, Alias.ChatFormatting>;
         /**
-         * Column position argument type (e.g., `0 0`, `~ ~`, `~5 ~-2`), for two-dimensional horizontal positions.
+         * 列坐标参数类型（例如 `0 0`、`~ ~`、`~5 ~-2`），用于二维水平位置。
          * 
-         * @return The created type; the return value is `ColumnPos`
+         * @return 创建的类型，返回值类型为 `ColumnPos`
          */
         function columnPos(): CommandArgumentType<Alias.Coordinates, Alias.ColumnPos>;
         /**
-         * Text component argument type (e.g., `"Hello"`, `{"text":"Hello"}`).
+         * 文本组件参数类型（例如 `"Hello"`、`{"text":"Hello"}`）。
          * 
-         * @return The created type; the return value is `Component`
+         * @return 创建的类型，返回值类型为 `Component`
          */
         function component(): CommandArgumentType<Alias.Component, Alias.Component>;
         /**
-         * Dimension argument type (e.g., `minecraft:overworld`).
+         * 维度参数类型（例如 `minecraft:overworld`）。
          * 
-         * Parses to the corresponding `ServerLevel` object.
+         * 解析为对应的 `ServerLevel` 对象。
          * 
-         * @return The created type; the return value is `ServerLevel`
+         * @return 创建的类型，返回值类型为 `ServerLevel`
          */
         function dimension(): CommandArgumentType<Alias.ResourceLocation, Alias.ServerLevel>;
         /**
-         * Single entity argument type (e.g., `@p`, `@e[type=player,limit=1]`, player name).
+         * 单个实体参数类型（例如 `@p`、`@e[type=player,limit=1]`、玩家名）。
          * 
-         * If the selection does not guarantee a single entity (e.g., `@e`), command parsing will fail.
+         * 若选择的目标不能保证为单个实体（例如 `@e`），则命令解析将失败。
          * 
-         * @return The created type; the return value is `Entity`
+         * @return 创建的类型，返回值类型为 `Entity`
          */
         function entity(): CommandArgumentType<Alias.CommandEntitySelector, Alias.Entity>;
         /**
-         * Multiple entities argument type (e.g., `@a`, `@e[type=minecraft:pig]`, list of player names).
+         * 多个实体参数类型（例如 `@a`、`@e[type=minecraft:pig]`、玩家名列表）。
          * 
-         * Returns a collection containing all selected entities.
+         * 返回包含所有选中实体的集合。
          * 
-         * @return The created type; the return value is `Collection<Entity>`
+         * @return 创建的类型，返回值类型为 `Collection<Entity>`
          */
         function entities(): CommandArgumentType<Alias.CommandEntitySelector, Alias.Collection<Alias.Entity>>;
         /**
-         * Entity anchor argument type (e.g., `eyes`, `feet`).
+         * 实体锚点参数类型（例如 `eyes`、`feet`）。
          * 
-         * Used in commands like `/teleport` to specify a position relative to an entity.
+         * 用于 `/teleport` 等命令中指定相对于实体的位置。
          * 
-         * @return The created type; the return value is `EntityAnchorArgument$Anchor`
+         * @return 创建的类型，返回值类型为 `EntityAnchorArgument$Anchor`
          */
         function entityAnchor(): CommandArgumentType<Alias.EntityAnchorArgument$Anchor, Alias.EntityAnchorArgument$Anchor>;
         /**
-         * Float range argument type (e.g., `1.2`, `0.5..1.5`, `..2.0`, `3.0..`).
+         * 浮点数范围参数类型（例如 `1.2`、`0.5..1.5`、`..2.0`、`3.0..`）。
          * 
-         * @return The created type; the return value is `MinMaxBounds$Doubles`
+         * @return 创建的类型，返回值类型为 `MinMaxBounds$Doubles`
          */
         function floatRange(): CommandArgumentType<Alias.MinMaxBounds$Doubles, Alias.MinMaxBounds$Doubles>;
         /**
-         * Function argument type (e.g., `minecraft:my_function`, `#minecraft:my_tag`).
+         * 函数参数类型（例如 `minecraft:my_function`、`#minecraft:my_tag`）。
          * 
-         * Parses to one or more functions (supports tags).
+         * 解析为一个或多个函数（支持标签）。
          * 
-         * @return The created type; the return value is `Collection<CommandFunction>`
+         * @return 创建的类型，返回值类型为 `Collection<CommandFunction>`
          */
         function functions(): CommandArgumentType<Alias.FunctionArgument$Result, Alias.Collection<Alias.CommandFunction>>;
         /**
-         * Game profile (player UUID and name) argument type.
+         * 游戏档案（玩家 UUID 和名称）参数类型。
          * 
-         * Typically used in commands like `/give` that require player profiles.
+         * 通常用于 `/give` 等需要玩家档案的命令。
          * 
-         * @return The created type; the return value is `Collection<GameProfile>`
+         * @return 创建的类型，返回值类型为 `Collection<GameProfile>`
          */
         function gameProfile(): CommandArgumentType<Alias.GameProfileArgument$Result, Alias.Collection<Alias.GameProfile>>;
         /**
-         * Game mode argument type (e.g., `survival`, `creative`, `adventure`, `spectator`).
+         * 游戏模式参数类型（例如 `survival`、`creative`、`adventure`、`spectator`）。
          * 
-         * @return The created type; the return value is `GameType`
+         * @return 创建的类型，返回值类型为 `GameType`
          */
         function gameMode(): CommandArgumentType<Alias.GameType, Alias.GameType>;
         /**
-         * Heightmap type argument type (e.g., `world_surface`, `ocean_floor`, `motion_blocking`).
+         * 高度图类型参数类型（例如 `world_surface`、`ocean_floor`、`motion_blocking`）。
          * 
-         * @return The created type; the return value is `Heightmap$Types`
+         * @return 创建的类型，返回值类型为 `Heightmap$Types`
          */
         function heightmap(): CommandArgumentType<Alias.Heightmap$Types, Alias.Heightmap$Types>;
         /**
-         * Integer range argument type (e.g., `5`, `1..10`, `..3`, `7..`).
+         * 整数范围参数类型（例如 `5`、`1..10`、`..3`、`7..`）。
          * 
-         * @return The created type; the return value is `MinMaxBounds$Ints`
+         * @return 创建的类型，返回值类型为 `MinMaxBounds$Ints`
          */
         function intRange(): CommandArgumentType<Alias.MinMaxBounds$Ints, Alias.MinMaxBounds$Ints>;
         /**
-         * Item predicate argument type (e.g., `minecraft:stone`, `#minecraft:logs`, `*`, `minecraft:stone{count:5}`).
+         * 物品谓词参数类型（例如 `minecraft:stone`、`#minecraft:logs`、`*`、`minecraft:stone{count:5}`）。
          * 
-         * @return The created type; the return value is `Predicate<ItemStack>`
+         * @return 创建的类型，返回值类型为 `Predicate<ItemStack>`
          */
         function itemPredicate(): CommandArgumentType<Alias.BlockPredicateArgument$Result, Alias.Predicate<Alias.ItemStack>>;
         /**
-         * Inventory slot argument type (e.g., `0`, `container.5`, `hotbar.0`, `inventory.0`).
+         * 物品栏槽位参数类型（例如 `0`、`container.5`、`hotbar.0`、`inventory.0`）。
          * 
-         * Returns the integer index of the slot.
+         * 返回槽位的整数索引。
          * 
-         * @return The created type; the return value is `number`
+         * @return 创建的类型，返回值类型为 `number`
          */
         function itemSlot(): CommandArgumentType<number, number>;
         /**
-         * Item argument type (e.g., `minecraft:stone`, `minecraft:diamond_sword{damage:5}`).
+         * 物品参数类型（例如 `minecraft:stone`、`minecraft:diamond_sword{damage:5}`）。
          * 
-         * Returns an object containing the item's NBT information.
+         * 返回包含物品 NBT 信息的对象。
          * 
-         * @return The created type; the return value is `ItemInput`
+         * @return 创建的类型，返回值类型为 `ItemInput`
          */
         function item(): CommandArgumentType<Alias.ItemInput, Alias.ItemInput>;
         /**
-         * Message argument type (supports selectors).
+         * 消息参数类型（支持选择器）。
          * 
-         * For example: `@p Hello!`.
+         * 例如 `@p Hello!`。
          * 
-         * @return The created type; the return value is `Component`
+         * @return 创建的类型，返回值类型为 `Component`
          */
         function message(): CommandArgumentType<Alias.MessageArgument$Message, Alias.Component>;
         /**
-         * NBT compound tag argument type (e.g., `{name:"Steve", age:30}`).
+         * NBT 复合标签参数类型（例如 `{name:"Steve", age:30}`）。
          * 
-         * @return The created type; the return value is `CompoundTag`
+         * @return 创建的类型，返回值类型为 `CompoundTag`
          */
         function nbtCompound(): CommandArgumentType<Alias.CompoundTag, Alias.CompoundTag>;
         /**
-         * NBT path argument type (e.g., `foo`, `foo.bar`, `foo[0]`, `foo[]`).
+         * NBT 路径参数类型（例如 `foo`、`foo.bar`、`foo[0]`、`foo[]`）。
          * 
-         * Used in the `/data` command.
+         * 用于 `/data` 命令。
          * 
-         * @return The created type; the return value is `NbtPathArgument$NbtPath`
+         * @return 创建的类型，返回值类型为 `NbtPathArgument$NbtPath`
          */
         function nbtPath(): CommandArgumentType<Alias.NbtPathArgument$NbtPath, Alias.NbtPathArgument$NbtPath>;
         /**
-         * Arbitrary NBT tag argument type (can parse to numbers, strings, lists, or compounds).
+         * 任意 NBT 标签参数类型（可解析为数字、字符串、列表或复合标签）。
          * 
-         * @return The created type; the return value is `Tag`
+         * @return 创建的类型，返回值类型为 `Tag`
          */
         function nbtTag(): CommandArgumentType<Alias.Tag, Alias.Tag>;
         /**
-         * Read-only scoreboard objective argument type (e.g., `scoreboard`, `deaths`).
+         * 只读计分板目标参数类型（例如 `scoreboard`、`deaths`）。
          * 
-         * Returns a scoreboard objective object, cannot be used for write operations.
+         * 返回计分板目标对象，不能用于写操作。
          * 
-         * @return The created type; the return value is `Objective`
+         * @return 创建的类型，返回值类型为 `Objective`
          */
         function objective(): CommandArgumentType<string, Alias.Objective>;
         /**
-         * Writable scoreboard objective argument type (e.g., `scoreboard`, `deaths`).
+         * 可写计分板目标参数类型（例如 `scoreboard`、`deaths`）。
          * 
-         * Returns a scoreboard objective object that can be used to modify scores.
+         * 返回计分板目标对象，可用于修改分数。
          * 
-         * @return The created type; the return value is `Objective`
+         * @return 创建的类型，返回值类型为 `Objective`
          */
         function writableObjective(): CommandArgumentType<string, Alias.Objective>;
         /**
-         * Scoreboard criterion argument type (e.g., `dummy`, `minecraft.killed:minecraft.zombie`).
+         * 计分板准则参数类型（例如 `dummy`、`minecraft.killed:minecraft.zombie`）。
          * 
-         * @return The created type; the return value is `ObjectiveCriteria`
+         * @return 创建的类型，返回值类型为 `ObjectiveCriteria`
          */
         function objectiveCriteria(): CommandArgumentType<Alias.ObjectiveCriteria, Alias.ObjectiveCriteria>;
         /**
-         * Scoreboard operation type argument type (e.g., `+=`, `-=`, `*=`, `/=`, `=`, `><`).
+         * 计分板操作类型参数类型（例如 `+=`、`-=`、`*=`、`/=`、`=`、`><`）。
          * 
-         * @return The created type; the return value is `OperationArgument$Operation`
+         * @return 创建的类型，返回值类型为 `OperationArgument$Operation`
          */
         function operation(): CommandArgumentType<Alias.OperationArgument$Operation, Alias.OperationArgument$Operation>;
         /**
-         * Particle argument type (e.g., `minecraft:poof`, `minecraft:block minecraft:stone`, `minecraft:dust 1.0 0.0 0.0 1.0`).
+         * 粒子参数类型（例如 `minecraft:poof`、`minecraft:block minecraft:stone`、`minecraft:dust 1.0 0.0 0.0 1.0`）。
          * 
-         * @return The created type; the return value is `ParticleOptions`
+         * @return 创建的类型，返回值类型为 `ParticleOptions`
          */
         function particle(): CommandArgumentType<Alias.ParticleOptions, Alias.ParticleOptions>;
         /**
-         * Resource key argument type (e.g., `minecraft:stone`), returns a `Holder.Reference` of the registry entry.
+         * 资源键参数类型（例如 `minecraft:stone`），返回注册表项的 `Holder.Reference`。
          * 
-         * @param resKey The registry's `ResourceKey` (e.g., `Registries.ITEM`)
-         * @return       The created type; the return value is `Holder.Reference<T>`
+         * @param resKey 注册表的 `ResourceKey`（例如 `Registries.ITEM`）
+         * @return       创建的类型，返回值类型为 `Holder.Reference<T>`
          */
         function resource<T>(resKey: Alias.ResourceKey<Alias.Registry<T>>): CommandArgumentType<Alias.Holder$Reference<T>, Alias.Holder$Reference<T>>;
         /**
-         * Resource location argument type (e.g., `minecraft:stone`).
+         * 资源位置参数类型（例如 `minecraft:stone`）。
          * 
-         * Returns only the identifier, does not validate existence in the registry.
+         * 只返回标识符，不验证注册表中是否存在。
          * 
-         * @return The created type; the return value is `ResourceLocation`
+         * @return 创建的类型，返回值类型为 `ResourceLocation`
          */
         function resourceLocation(): CommandArgumentType<Alias.ResourceLocation, Alias.ResourceLocation>;
         /**
-         * Resource or tag argument type (e.g., `minecraft:stone` or `#minecraft:planks`).
+         * 资源或标签参数类型（例如 `minecraft:stone` 或 `#minecraft:planks`）。
          * 
-         * Returns an object containing a resource key or tag.
+         * 返回包含资源键或标签的对象。
          * 
-         * @param resKey The registry's `ResourceKey`
-         * @return       The created type; the return value is `ResourceOrTagArgument$Result<T>`
+         * @param resKey 注册表的 `ResourceKey`
+         * @return       创建的类型，返回值类型为 `ResourceOrTagArgument$Result<T>`
          */
         function resourceOrTag<T>(resKey: Alias.ResourceKey<Alias.Registry<T>>): CommandArgumentType<Alias.ResourceOrTagArgument$Result<T>, Alias.ResourceOrTagArgument$Result<T>>;
         /**
-         * Resource key or tag key argument type, returns the key rather than an object.
+         * 资源键或标签键参数类型，返回键而非对象。
          * 
-         * @param resKey The registry's `ResourceKey`
-         * @return       The created type; the return value is `ResourceOrTagKeyArgument$Result<T>`
+         * @param resKey 注册表的 `ResourceKey`
+         * @return       创建的类型，返回值类型为 `ResourceOrTagKeyArgument$Result<T>`
          */
         function resourceOrTagKey<T>(resKey: Alias.ResourceKey<Alias.Registry<T>>): CommandArgumentType<Alias.ResourceOrTagKeyArgument$Result<T>, Alias.ResourceOrTagKeyArgument$Result<T>>;
         /**
-         * Rotation argument type (e.g., `0 0`, `~ ~`, `~10 ~-20`), returns a `Coordinates` object containing azimuth and elevation.
+         * 旋转参数类型（例如 `0 0`、`~ ~`、`~10 ~-20`），返回包含方位角和俯仰角的 `Coordinates` 对象。
          * 
-         * @return The created type; the return value is `Coordinates`
+         * @return 创建的类型，返回值类型为 `Coordinates`
          */
         function rotation(): CommandArgumentType<Alias.Coordinates, Alias.Coordinates>;
         /**
-         * Single scoreboard holder argument type (e.g., `@p`, `Steve`, `@e[limit=1]`).
+         * 单个计分板持有者参数类型（例如 `@p`、`Steve`、`@e[limit=1]`）。
          * 
-         * Returns the holder's name (string).
+         * 返回持有者的名称（字符串）。
          * 
-         * @return The created type; the return value is `string`
+         * @return 创建的类型，返回值类型为 `string`
          */
         function scoreHolder(): CommandArgumentType<Alias.ScoreHolderArgument$Result, string>;
         /**
-         * Multiple scoreboard holders argument type (e.g., `@a`, `Steve Alex`, `@e`).
+         * 多个计分板持有者参数类型（例如 `@a`、`Steve Alex`、`@e`）。
          * 
-         * Returns a collection of holder names.
+         * 返回持有者名称的集合。
          * 
-         * @return The created type; the return value is `Collection<string>`
+         * @return 创建的类型，返回值类型为 `Collection<string>`
          */
         function scoreHolders(): CommandArgumentType<Alias.ScoreHolderArgument$Result, Alias.Collection<string>>;
         /**
-         * Scoreboard display slot argument type (e.g., `list`, `sidebar`, `belowName`).
+         * 计分板显示位置参数类型（例如 `list`、`sidebar`、`belowName`）。
          * 
-         * @return The created type; the return value is `number`
+         * @return 创建的类型，返回值类型为 `number`
          */
         function scoreboardSlot(): CommandArgumentType<number, number>;
         /**
-         * Swizzle (axis set) argument type (e.g., `x`, `xy`, `xz`, `xyz`), used with `//` or `~` coordinates.
+         * 坐标轴集合参数类型（例如 `x`、`xy`、`xz`、`xyz`），用于 `//` 或 `~` 坐标。
          * 
-         * @return The created type; the return value is `EnumSet<Direction$Axis>`
+         * @return 创建的类型，返回值类型为 `EnumSet<Direction$Axis>`
          */
         function swizzle(): CommandArgumentType<Alias.EnumSet<Alias.Direction$Axis>, Alias.EnumSet<Alias.Direction$Axis>>;
         /**
-         * Team argument type (e.g., `red`, `blue`).
+         * 队伍参数类型（例如 `red`、`blue`）。
          * 
-         * @return The created type; the return value is `PlayerTeam`
+         * @return 创建的类型，返回值类型为 `PlayerTeam`
          */
         function team(): CommandArgumentType<string, Alias.PlayerTeam>;
         /**
-         * Structure mirror argument type (e.g., `none`, `left_right`, `front_back`).
+         * 结构镜像参数类型（例如 `none`、`left_right`、`front_back`）。
          * 
-         * @return The created type; the return value is `Mirror`
+         * @return 创建的类型，返回值类型为 `Mirror`
          */
         function templateMirror(): CommandArgumentType<Alias.Mirror, Alias.Mirror>;
         /**
-         * Structure rotation argument type (e.g., `none`, `clockwise_90`, `clockwise_180`, `counterclockwise_90`).
+         * 结构旋转参数类型（例如 `none`、`clockwise_90`、`clockwise_180`、`counterclockwise_90`）。
          * 
-         * @return The created type; the return value is `Rotation`
+         * @return 创建的类型，返回值类型为 `Rotation`
          */
         function templateRotation(): CommandArgumentType<Alias.Rotation, Alias.Rotation>;
         /**
-         * Time argument type (e.g., `10t`, `5s`, `1d`), returns an integer in ticks.
+         * 时间参数类型（例如 `10t`、`5s`、`1d`），返回以刻为单位的整数。
          * 
-         * @param minimum The minimum allowed time (in ticks), defaults to `0`
-         * @return The created type; the return value is `number`
+         * @param minimum 最小允许时间（以刻为单位），默认为 `0`
+         * @return 创建的类型，返回值类型为 `number`
          */
         function time(minimum: number = 0): CommandArgumentType<number, number>;
         /**
-         * UUID argument type (e.g., `550e8400-e29b-41d4-a716-446655440000`).
+         * UUID 参数类型（例如 `550e8400-e29b-41d4-a716-446655440000`）。
          * 
-         * @return The created type; the return value is `UUID`
+         * @return 创建的类型，返回值类型为 `UUID`
          */
         function uuid(): CommandArgumentType<Alias.UUID, Alias.UUID>;
         /**
-         * Two-dimensional vector argument type (e.g., `0 0`, `~ ~`, `^ ^`), for relative world or local coordinates.
+         * 二维向量参数类型（例如 `0 0`、`~ ~`、`^ ^`），用于相对世界坐标或局部坐标。
          * 
-         * @param centerCorrect Whether to apply center correction (e.g., adjust `0 0` to `0.5 0.5`)
-         * @return              The created type; the return value is `Vec2`
+         * @param centerCorrect 是否对中心进行修正（例如将 `0 0` 修正到 `0.5 0.5`）
+         * @return              创建的类型，返回值类型为 `Vec2`
          */
         function vec2(centerCorrect: boolean = false): CommandArgumentType<Alias.Coordinates, Alias.Vec2>;
         /**
-         * Three-dimensional vector argument type (e.g., `0 0 0`, `~ ~ ~`, `^ ^ ^`).
+         * 三维向量参数类型（例如 `0 0 0`、`~ ~ ~`、`^ ^ ^`）。
          * 
-         * @param centerCorrect Whether to apply center correction (e.g., adjust `0 0 0` to `0.5 0.5 0.5`)
-         * @return              The created type; the return value is `Vec3`
+         * @param centerCorrect 是否对中心进行修正（例如将 `0 0 0` 修正到 `0.5 0.5 0.5`）
+         * @return              创建的类型，返回值类型为 `Vec3`
          */
         function vec3(centerCorrect: boolean = false): CommandArgumentType<Alias.Coordinates, Alias.Vec3>;
     }
 
     /**
-     * Definition of a command argument type. Contains two functions: `getType` to obtain the argument's type during command building, and `getValue` to extract the argument's value from the command context.
+     * 命令参数类型的定义。包含两个函数：`getType` 用于获取该参数在命令构建中的类型，`getValue` 用于从命令上下文中提取该参数的值。
      */
     type CommandArgumentType<T, R> = {
         /**
-         * Gets the argument's type during command building. This type is used in the {@linkcode CmdBuilder.argType} method to specify the argument type.
+         * 获取该参数在命令构建中的类型。这个类型用于在 {@linkcode CmdBuilder.argType} 方法中指定参数类型。
          * 
-         * @param context The command build context
-         * @return        The argument's type during command building
+         * @param context 命令构建上下文
+         * @return        该参数在命令构建中的类型
          */
         getType(context: Alias.CommandBuildContext): Alias.ArgumentType<T>,
         /**
-         * Extracts the argument's value from the command execution context. This function is called when the command is executed. `context` is the command execution context, and `argName` is the argument name (as specified by `<argName>` in the command format).
+         * 从命令执行上下文中提取该参数的值。这个函数会在命令执行时被调用，`context` 是命令执行的上下文，`argName` 是参数名（即在命令格式中用 `<argName>` 指定的名称）。
          * 
-         * @param context The command execution context
-         * @param argName The argument name
+         * @param context 命令执行上下文
+         * @param argName 参数名
          */
         getValue(context: Alias.CommandContext<Alias.CommandSourceStack>, argName: string): R
     };
 
     /**
-     * The format of objects in the array returned by {@linkcode parseCommandUsage}.
+     * {@linkcode parseCommandUsage} 结果数组中的对象格式。
      */
     type ParsedArgument = ({
         type: "LITERAL",
@@ -1102,28 +1102,28 @@ declare namespace RegCmd {
     }) & {optional: boolean};
 
     /**
-     * Internal method used by `RegCmd` to parse command formats.
+     * `RegCmd` 内部使用的用于解析命令格式的方法。
      * 
-     * @param usage A string representing the command format
-     * @return      An array of parsed command arguments
+     * @param usage 一个表示命令格式的字符串
+     * @return      解析出的命令参数的数组
      */
     function parseCommandUsage(usage: string): ParsedArgument[];
     /**
-     * Starts a command definition. After definition, no `build` method is needed (in fact, there is none); these commands are automatically registered.
+     * 开始命令定义。定义结束后无需使用 `build` 等方法（其实根本没有），这些命令会被自动注册。
      * 
-     * ## Command Format:
+     * ## 命令格式：
      * 
-     * | Format               | Description                                                                        |
-     * |----------------------|------------------------------------------------------------------------------------|
-     * |`literal`             | A command literal. Must be typed exactly as shown                                  |
-     * |`[literal]`           | Indicates that the literal is optional                                             |
-     * |`(literalA\|literalB)`| Choose one of the literals. Use `\|` to connect more literals for selection        |
-     * |`[literalA\|literalB]`| Optional version of `(literalA\|literalB)`                                         |
-     * |`<argumentName>`      | A command argument. Input must follow the format of the corresponding argument type|
-     * |`[<argumentName>]`    | Optional version of `<argumentName>`                                               |
+     * |格式                |描述                                                            |
+     * |--------------------|----------------------------------------------------------------|
+     * |`字面量`            |一个命令字面量。输入时必须原样输入                              |
+     * |`[字面量]`          |表示该自变量可选                                                |
+     * |`(字面量A\|字面量B)`|表示从两个字面量中任选其一。可以使用 `\|` 连接更多字面量以供选择|
+     * |`[字面量A\|字面量B]`|`(字面量A\|字面量B)` 的可选版本                                 |
+     * |`<参数名>`          |一个命令参数。输入时须遵循对应参数类型的格式                    |
+     * |`[<参数名>]`        |`<参数名>` 的可选版本                                           |
      * 
-     * @param usage A string representing the command format
-     * @return      The created {@linkcode CmdBuilder} for building the command
+     * @param usage 一个表示命令格式的字符串
+     * @return      创建的 {@linkcode CmdBuilder}，用于构建命令
      * 
      * @example
      * RegCmd.defineCommmand("/example");
