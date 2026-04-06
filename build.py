@@ -81,5 +81,5 @@ for language, dts_path in definitions.items():
             readme_content = readme_content.replace('{script_types}', '[' + ', '.join(xxx + '_scripts' for xxx in scripts.keys()) + ']')
             readme_content = readme_content.replace('{scripts}', '\n'.join([f'- `{script_path}`' for script_path in placed_scripts]))
             readme_content = readme_content.replace('{definition}', f'`{dts_name}`')
-            readme_content = readme_content.replace('{startup_script}', f'`{script_name}.{xxx}.js`' if 'startup' in scripts else 'the startup script')
+            readme_content = readme_content.replace('{startup_script}', f'`{script_name}.startup.js`' if 'startup' in scripts else f'{script_name}.server.js' if 'server' in scripts else f'{script_name}.client.js')
             zip_file.writestr('README.md', readme_content)
