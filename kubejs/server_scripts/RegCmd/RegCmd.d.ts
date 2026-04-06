@@ -146,7 +146,7 @@ declare namespace RegCmd {
         protected defaultLiterals: string[];
         protected parallelCommands: CmdBuilder<any>[];
         protected childrenCommands: CmdBuilder<any>[];
-        protected buildNode(event: Alias.CommandRegistryEventJS, index: number, literalsSoFar: string[], parentNode: Alias.ArgumentBuilder<Alias.CommandSourceStack, any>): Alias.ArgumentBuilder<Alias.CommandSourceStack, any>[]?;
+        protected buildNode(event: Alias.CommandRegistryEventJS, index: number, literalsSoFar: string[], parentNode: Alias.ArgumentBuilder<Alias.CommandSourceStack, any>, childrenRoots: Alias.ArgumentBuilder<Alias.CommandSourceStack, any>[]): Alias.ArgumentBuilder<Alias.CommandSourceStack, any>[]?;
         protected genArgs(context: Alias.CommandContext<Alias.CommandSourceStack>): Readonly<{[argName in keyof P]: P[argName] extends CommandArgumentType<any, infer R> ? R : never}>;
         executes(executeFunction: (context: Alias.CommandContext<Alias.CommandSourceStack>, args: Readonly<{[argName in keyof P]: P[argName] extends CommandArgumentType<any, infer R> ? R : never}>, literals: (string | null)[]) => number): this;
         clearRequirements(): this;

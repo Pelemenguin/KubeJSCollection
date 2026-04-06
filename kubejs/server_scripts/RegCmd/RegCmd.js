@@ -74,7 +74,6 @@ let exported = {
         }
         /** @type {RegCmd.ParsedArgument[]} */
         let results = [];
-        let begunOptional = false;
         for (let p of parts) {
             /** @type {RegCmd.ParsedArgument} */
             let cur = {
@@ -83,7 +82,6 @@ let exported = {
 
             // [xxx] => xxx is optional
             if (p.startsWith('[') && p.endsWith(']')) {
-                begunOptional = true;
                 cur.optional = true;
                 p = p.substring(1, p.length - 1);
 
@@ -95,8 +93,6 @@ let exported = {
                     results.push(cur);
                     continue;
                 }
-            } else if (begunOptional) {
-                throw new Error("Cannot have required arguments after optional arguments");
             }
 
             // <xxx> => xxx is an argument name
@@ -525,8 +521,13 @@ Object.freeze(exported.ArgTypes);
 let CmdBuilder = exported.CmdBuilder;
 
 /** @type {RegCmd.CmdBuilder["buildNode"]} */
-CmdBuilder.prototype.buildNode = function(event, index, literalsSoFar, parentNode) {
+CmdBuilder.prototype.buildNode = function(event, index, literalsSoFar, parentNode, childrenRoots) {
     if (index >= this.commandArguments.length) {
+        if (childrenRoots != undefined) {
+            childrenRoots.forEach(r => {
+                if (parentNode != null) parentNode.then(r);
+            });
+        }
         return null;
     }
     const Commands = event.getCommands();
@@ -537,7 +538,7 @@ CmdBuilder.prototype.buildNode = function(event, index, literalsSoFar, parentNod
         case "LITERAL": {
             let curNode = Commands.literal(part.literal);
             curLiterals.push(part.literal);
-            this.buildNode(event, index + 1, curLiterals, curNode);
+            this.buildNode(event, index + 1, curLiterals, curNode, childrenRoots);
             if (shouldExecute) {
                 for (let i = curLiterals.length; i < this.commandArguments.length; i++) {
                     curLiterals.push(this.defaultLiterals[i]);
@@ -553,7 +554,7 @@ CmdBuilder.prototype.buildNode = function(event, index, literalsSoFar, parentNod
                 let curcurLiterals = curLiterals.slice();
                 let curNode = Commands.literal(literal);
                 curcurLiterals.push(literal);
-                this.buildNode(event, index + 1, curcurLiterals, curNode);
+                this.buildNode(event, index + 1, curcurLiterals, curNode, childrenRoots);
                 if (shouldExecute) {
                     for (let i = curcurLiterals.length; i < this.commandArguments.length; i++) {
                         curcurLiterals.push(this.defaultLiterals[i]);
@@ -573,7 +574,7 @@ CmdBuilder.prototype.buildNode = function(event, index, literalsSoFar, parentNod
             }
             let curNode = Commands.argument(part.name, type.getType(event.context));
             curLiterals.push(null);
-            this.buildNode(event, index + 1, curLiterals, curNode);
+            this.buildNode(event, index + 1, curLiterals, curNode, childrenRoots);
             if (shouldExecute) {
                 for (let i = curLiterals.length; i < this.commandArguments.length; i++) {
                     curLiterals.push(this.defaultLiterals[i]);
@@ -616,7 +617,13 @@ CmdBuilder.prototype.registerToEvent = function(event, registerer, isRoot) {
         throw new Error("Root command must start with a literal");
     }
 
-    let roots = this.buildNode(event, 0, [], null);
+    let childrenRoots = [];
+    this.childrenCommands.forEach(cmd => {
+        cmd.registerToEvent(event, c => {
+            childrenRoots.push(c);
+        }, false);
+    });
+    let roots = this.buildNode(event, 0, [], null, childrenRoots);
     roots.forEach(c => {
         registerer(c);
     });
@@ -694,7 +701,16 @@ CmdBuilder.prototype.or = function(usage) {
 };
 /** @type {RegCmd.CmdBuilder["then"]} */
 CmdBuilder.prototype.then = function(usage) {
-    // TODO
+    let result = new CmdBuilder(exported.parseCommandUsage(usage));
+    for (let a in this.args) {
+        result.argType(a, this.args[a]);
+    }
+    for (let a in this.defaultValues) {
+        result.argDefault(a, this.defaultValues[a]);
+    }
+    result.requires(this.requirementPredicate);
+    this.childrenCommands.push(result);
+    return result;
 };
 
 ServerEvents.commandRegistry(event => {
