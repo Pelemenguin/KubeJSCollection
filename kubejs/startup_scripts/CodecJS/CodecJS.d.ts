@@ -2,11 +2,21 @@ declare namespace CodecJS {
 
     declare namespace Alias {
 
+        /** `java.nio.ByteBuffer` */
+        type ByteBuffer = Internal.ByteBuffer;
+
+        /** `java.util.stream.IntStream` */
+        type IntStream = Internal.IntStream;
+        /** `java.util.stream.LongStream` */
+        type LongStream = Internal.LongStream;
+
         /** `com.mojang.serialization.Codec` */
-        type  Codec<A>     = Internal.Codec<A>;
-        type $Codec<A>     = Internal.Codec<A>;
+        type  Codec<A>          = Internal.Codec<A>;
+        type $Codec<A>          = Internal.Codec<A>;
+        /** `com.mojang.serialization.Dynamic` */
+        type Dynamic<T>         = Internal.Dynamic<T>;
         /** `com.mojang.serialization.DynamicOps` */
-        type DynamicOps<T> = Internal.DynamicOps<T>;
+        type DynamicOps<T>      = Internal.DynamicOps<T>;
 
         /** `net.minecraft.nbt.NbtOps` */
         type NbtOps           = Internal.NbtOps;
@@ -20,6 +30,18 @@ declare namespace CodecJS {
     }
 
     declare namespace Builtins {
+        const BOOL: Alias.Codec<boolean>;
+        const BYTE: Alias.Codec<number>;
+        const BYTE_BUFFER: Alias.Codec<Alias.ByteBuffer>;
+        const DOUBLE: Alias.Codec<number>;
+        const FLOAT: Alias.Codec<number>;
+        const INT: Alias.Codec<number>;
+        const INT_STREAM: Alias.Codec<Alias.IntStream>;
+        const LONG: Alias.Codec<number>;
+        const LONG_STREAM: Alias.Codec<Alias.LongStream>;
+        const PASSTHROUGH: Alias.Codec<Alias.Dynamic<any>>;
+        const SHORT: Alias.Codec<number>;
+        const STRING: Alias.Codec<string>;
         const RESOURCE_LOCATION: Alias.Codec<Alias.ResourceLocation>;
     }
 

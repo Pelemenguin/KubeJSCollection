@@ -10,7 +10,7 @@ const exported = {
 
 //#region - Load Java classes
 
-/** @type {Alias.$Codec<any>} */
+/** @type {CodecJS.Alias.$Codec<any>} */
 const $Codec = Java.loadClass("com.mojang.serialization.Codec");
 
 const $NbtOps = Java.loadClass("net.minecraft.nbt.NbtOps");
@@ -22,6 +22,18 @@ const $NbtOps = Java.loadClass("net.minecraft.nbt.NbtOps");
 exported.NbtOps = $NbtOps.INSTANCE;
 
 exported.Builtins = {
+    BOOL: $Codec.BOOL,
+    BYTE: $Codec.BYTE,
+    BYTE_BUFFER: $Codec.BYTE_BUFFER,
+    DOUBLE: $Codec.DOUBLE,
+    FLOAT: $Codec.FLOAT,
+    INT: $Codec.INT,
+    INT_STREAM: $Codec.INT_STREAM,
+    LONG: $Codec.LONG,
+    LONG_STREAM: $Codec.LONG_STREAM,
+    PASSTHROUGH: $Codec.PASSTHROUGH,
+    SHORT: $Codec.SHORT,
+    STRING: $Codec.STRING,
     RESOURCE_LOCATION: ResourceLocation.CODEC
 };
 
@@ -38,7 +50,7 @@ exported.toNbt = function(obj, codec, handleError) {
     return codec.encodeStart(exported.NbtOps, obj)
         .resultOrPartial(handleError)
         .orElse(null);
-}
+};
 
 exported.fromNbt = function(tag, codec, handleError) {
     if (handleError == undefined) {
@@ -49,7 +61,7 @@ exported.fromNbt = function(tag, codec, handleError) {
     return codec.parse(exported.NbtOps, tag)
         .resultOrPartial(handleError)
         .orElse(null);
-}
+};
 
 //#endregion
 
