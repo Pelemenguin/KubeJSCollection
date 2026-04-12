@@ -79,14 +79,17 @@ const $Arrays            = Java.loadClass("java.util.Arrays");
 const $HashMap           = Java.loadClass("java.util.HashMap");
 const $Object            = Java.loadClass("java.lang.Object");
 /** @type {typeof Internal.Thread} */
-const $Thread            = loadSpecial("java.lang.Thread");
+const $Thread            =    loadSpecial("java.lang.Thread");
 const $ConcurrentHashMap = Java.loadClass("java.util.concurrent.ConcurrentHashMap");
+const $Executors         = Java.loadClass("java.util.concurrent.Executors");
 
 const $Context    = Java.loadClass("dev.latvian.mods.rhino.Context");
 const $Function   = Java.loadClass("dev.latvian.mods.rhino.Function");
 const $Scriptable = Java.loadClass("dev.latvian.mods.rhino.Scriptable");
 
 //#endregion
+
+//#region - Threads
 
 const threadInfos = getOrDefault(theGlobal, "threads", () => new $ConcurrentHashMap());
 
@@ -96,25 +99,56 @@ let functionClass = $Function.__javaObject__;
 let functionCallMethod = functionClass.getMethod("call", $Context, $Scriptable, $Scriptable, $Object.__javaObject__.arrayType());
 
 /**
- * @param {string} identifier
  * @param {() => void} runnable 
+ * @param {string | null} identifier
  * @param {MultiThreadic.Types.TypedMap<MultiThreadic.ThreadInfo> | null} threadInfo
  */
-let threadFactory = (identifier, runnable, threadInfo) => {
-    let scope = $ScriptableObject.getTopLevelScope(runnable);
-    let thread = new $Thread(() => {
+let threadFactory = (runnable, identifier, threadInfo) => {
+    let scope = $ScriptableObject.getTopLevelScope({_: runnable});
+    let task = () => {
         // Rhino won't convert automatically as `invoke` accepts `Object[]`, not any specific types
         // So we use manually converted `emptyArr`
         let context = $Context.enter();
         if (threadInfo) threadInfo.put("context", context);
         functionCallMethod.invoke(runnable, context, scope, null, emptyArr);
-    }, CONFIG.THREAD_NAME_PREFIX + identifier);
+    };
+    let thread = identifier ? new $Thread(task, CONFIG.THREAD_NAME_PREFIX + identifier) : new $Thread(task);
     if (threadInfo) threadInfo.put("thread", thread);
+    console.info(thread);
     return thread;
 };
 
 // Force conversion
 let emptyArr = $Arrays["copyOf(java.lang.Object[],int)"]([], 0);
+
+//#endregion
+
+//#region - Executors
+
+const executorServices = getOrDefault(theGlobal, "executorServices", () => new $ConcurrentHashMap());
+
+/** @type {typeof MultiThreadic.Executors} */
+const ExecutorsWrapper = {
+    newScheduledThreadPool(identifier, threadCount) {
+        let result;
+        executorServices.compute(identifier, (_key, original) => {
+            if (original != null) {
+                result = null;
+                return original;
+            } else {
+                let created = $Executors.newScheduledThreadPool(threadCount);
+                result = created;
+                return created;
+            }
+        });
+        // TODO: Wrap executor
+        return result;
+    }
+};
+
+Object.freeze(ExecutorsWrapper);
+
+//#region - Export
 
 /** @type {typeof MultiThreadic} */
 let exported = {
@@ -133,10 +167,9 @@ let exported = {
         let threadInfo = new $HashMap();
         let existing = threadInfos.putIfAbsent(identifier, threadInfo);
         if (existing != null) {
-            console.warn(`Thread with identifier '${identifier}' already exists, returning null. If you want to create a new thread, please use a different identifier or stop the previous thread`);
             return null;
         }
-        threadFactory(identifier, task, threadInfo);
+        threadFactory(task, identifier, threadInfo);
         return threadInfo.get("thread");
     },
     listThreads() {
@@ -175,10 +208,16 @@ let exported = {
     sleep(millis) {
         $Thread.sleep(millis);
     },
-    CONFIG: CONFIG
+    // TODO: Mention in JSDoc that user should never call this
+    //       unless they know what they are doing
+    threadFactory: (t) => threadFactory(t),
+    CONFIG: CONFIG,
+    Executors: ExecutorsWrapper
 };
 
 return Object.freeze(exported);
+
+//#endregion
 
 })();
 
