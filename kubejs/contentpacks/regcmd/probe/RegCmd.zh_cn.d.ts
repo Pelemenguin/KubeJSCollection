@@ -538,7 +538,7 @@ declare namespace RegCmd {
          * 
          * > ```javascript
          * > RegCmd.defineCommand("/greet <arg> [literal]")
-         * >     .argType("arg", RegCmd.ArgTypes.greedyString())
+         * >     .argType("arg", RegCmd.ArgTypes.string())
          * >     .argSuggests("arg", (context, builder, args, literals) => {
          * >         // `literals` 为 [example] 而非 [example, arg, literal]
          * >         // 因为我们无法获取位于这个参数之后的字面量

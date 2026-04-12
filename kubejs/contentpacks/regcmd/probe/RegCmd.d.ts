@@ -538,7 +538,7 @@ declare namespace RegCmd {
          * 
          * > ```javascript
          * > RegCmd.defineCommand("/greet <arg> [literal]")
-         * >     .argType("arg", RegCmd.ArgTypes.greedyString())
+         * >     .argType("arg", RegCmd.ArgTypes.string())
          * >     .argSuggests("arg", (context, builder, args, literals) => {
          * >         // `literals` is e.g. [example] not [example, arg, literal]
          * >         // because we cannot obtain literals that come after this argument

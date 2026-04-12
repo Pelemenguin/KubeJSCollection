@@ -3,6 +3,13 @@
   "authors": [
     "Pelemenguin"
   ],
+  "dependencies": [
+    {
+      "ordering": "BEFORE",
+      "type": "OPTIONAL",
+      "id": "kubejs"
+    }
+  ],
   "id": "regcmd",
   "name": "RegCmd",
   "description": ""

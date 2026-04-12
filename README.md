@@ -4,7 +4,19 @@
 
 I don't know what to write, so let's just write some KubeJS library stuff🐧
 
+## 使用
+
+GitHub Release will publish two types of files:
+
+- `.jar`
+  - Packaged by KubeLoader, can be placed in the `mods` folder to load when KubeLoader is present
+- `zip`
+  - Can be extracted to the root directory of the Minecraft game version for use
+
+Since multiple language `.d.ts` files are provided, you can delete the unnecessary files when using them,
+or set `exclude` in `jsconfig.json` to exclude the unnecessary files.
+
 ## List
 
-- [`ComponentStylizer`](./kubejs/startup_scripts/ComponentStylizer/README.md) - For easily setting component styles
-- [`RegCmd`](./kubejs/server_scripts/RegCmd/README.md) - For simplifying command registry
+- [`ComponentStylizer`](https://github.com/Pelemenguin/KubeJSCollection/releases/tag/ComponentStylizer-v1.0) - For easily setting component styles
+- [`RegCmd`](https://github.com/Pelemenguin/KubeJSCollection/releases/tag/RegCmd-v1.0.1) - For simplifying command registry
