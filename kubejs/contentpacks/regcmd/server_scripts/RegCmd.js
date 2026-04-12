@@ -163,6 +163,7 @@ let exported = {
         }
         this.parallelCommands = [];
         this.childrenCommands = [];
+        this.suggestions = {};
     },
     ArgTypes: {
         bool: () => {
@@ -602,6 +603,13 @@ CmdBuilder.prototype.buildNode = function(event, index, literalsSoFar, parentNod
                 for (let i = curLiterals.length; i < this.commandArguments.length; i++) {
                     curLiterals.push(this.defaultLiterals[i]);
                 }
+                if (part.name in this.suggestions) {
+                    curNode.suggests((context, builder) => {
+                        this.suggestions[part.name](context, builder, this.genArgs(context), curLiterals.slice());
+                        return builder.buildFuture();
+                    });
+                }
+                Object.freeze(curLiterals);
                 curNode.executes(context => this.executeFunction(context, this.genArgs(context), curLiterals));
             }
             if (parentNode != null) parentNode.then(curNode);
@@ -613,22 +621,28 @@ CmdBuilder.prototype.buildNode = function(event, index, literalsSoFar, parentNod
 CmdBuilder.prototype.genArgs = function(context) {
     let args = {};
     for (let arg in this.args) {
-        /** @type {RegCmd.CommandArgumentType<?, ?>} */
-        let type = this.args[arg];
-        let value;
-        try {
-            value = type.getValue(context, arg);
-        } catch (e) {
-            let def = this.defaultValues[arg];
-            if (def == undefined) {
-                value = undefined;
-            } else {
-                value = def()
+        let argCopy = arg;
+        let outerThis = this;
+        Object.defineProperty(args, argCopy, {
+            get: () => {
+                /** @type {RegCmd.CommandArgumentType<?, ?>} */
+                let type = outerThis.args[argCopy];
+                let value;
+                try {
+                    value = type.getValue(context, argCopy);
+                } catch (e) {
+                    console.error(e);
+                    let def = outerThis.defaultValues[argCopy];
+                    if (def == undefined) {
+                        value = undefined;
+                    } else {
+                        value = def()
+                    }
+                }
+                return value;
             }
-        }
-        args[arg] = value;
+        });
     }
-    Object.freeze(args);
     return args;
 };
 /** @type {RegCmd.CmdBuilder["registerToEvent"]} */
@@ -698,6 +712,11 @@ CmdBuilder.prototype.argDefault = function(argName, defaultValue) {
     this.defaultValues[argName] = defaultValue;
     return this;
 };
+/** @type {RegCmd.CmdBuilder["argSuggests"]} */
+CmdBuilder.prototype.argSuggests = function(argName, suggestion) {
+    this.suggestions[argName] = suggestion;
+    return this;
+};
 /** @type {RegCmd.CmdBuilder["literalDefault"]} */
 CmdBuilder.prototype.literalDefault = function(index, literal) {
     if (index < 0 || index >= this.commandArguments.length) {
@@ -718,6 +737,9 @@ CmdBuilder.prototype.or = function(usage) {
     for (let a in this.defaultValues) {
         result.argDefault(a, this.defaultValues[a]);
     }
+    for (let a in this.suggestions) {
+        result.argSuggests(a, this.suggestions[a]);
+    }
     result.requires(this.requirementPredicate);
     this.parallelCommands.push(result);
     return result;
@@ -731,13 +753,18 @@ CmdBuilder.prototype.then = function(usage) {
     for (let a in this.defaultValues) {
         result.argDefault(a, this.defaultValues[a]);
     }
+    for (let a in this.suggestions) {
+        result.argSuggests(a, this.suggestions[a]);
+    }
     result.requires(this.requirementPredicate);
     this.childrenCommands.push(result);
     return result;
 };
 
 ServerEvents.commandRegistry(event => {
+    console.info("[RegCmd] Begin command registration");
     for (let builder of ALL_BUILDERS) {
+        console.info("[RegCmd] Registering command: /" + builder.commandArguments[0].literal);
         builder.registerToEvent(event, c => event.register(c), true);
     }
 })
@@ -745,3 +772,12 @@ ServerEvents.commandRegistry(event => {
 return exported;
 
 })();
+
+
+console.info("RegCmd loaded!");
+
+// Add to KubeLoader
+try {
+    ContentPacks.putShared("pelemenguin.regcmd", RegCmd);
+    console.info("Access RegCmd via ContentPacks.getShared('pelemenguin.regcmd')");
+} catch (e) {}

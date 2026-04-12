@@ -226,35 +226,8 @@
  * 
  * ### 命令要求
  * 
- * 有些命令带有作弊属性，可能对服务器上其它玩家造成影响，这时就可以通过设置要求来限定只有满足要求的玩家才能执行命令。
- * 
- * 使用 {@linkcode CmdBuilder.requires} 限定要求：
- * 
- * > ```javascript
- * > RegCmd.defineCommand("/accelerate <motion>")
- * >     .argType("motion", RegCmd.ArgTypes.vec3())
- * >     // 玩家至少有 2 级权限才能执行（一般作弊命令的权限）
- * >     .requires(s => s.hasPermission(2))
- * >     .executes((context, args) => {
- * >         let player = context.getSource().getPlayer();
- * >         if (player == null) {
- * >             context.getSource().sendFailure(Component.literal("调用者不是玩家"));
- * >             return 0;
- * >         }
- * >         player.addDeltaMovement(args.motion);
- * >         context.getSource().sendSuccess(Component.literal("已对调用者添加加速度"), true);
- * >         return 1;
- * >     });
- * > ```
- * 
- * 或者使用预设好的 {@linkcode CmdBuilder.requiresOperator} 方法，这与 `.requires(s => s.hasPermission(2))` 是等价的：
- * 
- * > ```javascript
- * > RegCmd.defineCommand("/accelerate <motion>")
- * >     .argType("motion", RegCmd.ArgTypes.vec3())
- * >     .requiresOperator()
- * >     // 后续内容
- * > ```
+ * 有些命令带有作弊属性，可能对服务器上其它玩家造成影响，
+ * 这时就可以通过 {@linkcode CmdBuilder.requires} 来设置要求以限定只有满足要求的玩家才能执行命令。
  * 
  * ### 命令分支
  * 
@@ -266,6 +239,20 @@
  * 由于在 Minecraft 1.20.1 版本上同时存在 ProbeJS 6 与 ProbeJS 7，
  * 它们生成的类型定义文件格式大相径庭。
  * 为了获得正确的类型提示，可以前往 {@linkcode Alias} 命名空间更改别名以匹配你自己的 ProbeJS 生成的类型定义。
+ * 
+ * ## KubeLoader
+ * @since 1.0.1
+ * 
+ * 该模块支持通过 KubeLoader 加载。
+ * 当使用 KubeLoader 加载时，使用：
+ * 
+ * > ```javascript
+ * > const RegCmd = ContentPacks.getShared("pelemenguin.regcmd");
+ * > // 或更严谨地：
+ * > const RegCmd = ContentPacks.getShared("server", "pelemenguin.regcmd");
+ * > ```
+ * 
+ * 来将其加载的你自己的脚本中。
  * 
  * ---
  * 
@@ -305,6 +292,8 @@ declare namespace RegCmd {
         type ArgumentBuilder<S, T extends ArgumentBuilder<S, T>> = Internal.ArgumentBuilder<S, T>;
         /** `com.mojang.brigadier.context.CommandContext` */
         type CommandContext<S>                                   = Internal.CommandContext<S>;
+        /** `com.mojang.brigadier.suggestion.SuggestionsBuilder` */
+        type SuggestionsBuilder                                  = Internal.SuggestionsBuilder;
 
         /** `dev.latvian.mods.kubejs.command.CommandRegistryEventJS` */
         type CommandRegistryEventJS = Internal.CommandRegistryEventJS;
@@ -436,6 +425,7 @@ declare namespace RegCmd {
         protected defaultLiterals: string[];
         protected parallelCommands: CmdBuilder<any>[];
         protected childrenCommands: CmdBuilder<any>[];
+        protected suggestions: Partial<{[s in keyof P]: Parameters<CmdBuilder<P>["argSuggests"]>[1]}>;
         protected buildNode(event: Alias.CommandRegistryEventJS, index: number, literalsSoFar: string[], parentNode: Alias.ArgumentBuilder<Alias.CommandSourceStack, any>, childrenRoots: Alias.ArgumentBuilder<Alias.CommandSourceStack, any>[]): Alias.ArgumentBuilder<Alias.CommandSourceStack, any>[]?;
         protected genArgs(context: Alias.CommandContext<Alias.CommandSourceStack>): Readonly<{[argName in keyof P]: P[argName] extends CommandArgumentType<any, infer R> ? R : never}>;
         /**
@@ -461,6 +451,34 @@ declare namespace RegCmd {
         clearRequirements(): this;
         /**
          * 添加一个谓词，用于检查命令执行的权限等要求。
+         * 
+         * 例如：
+         * 
+         * > ```javascript
+         * > RegCmd.defineCommand("/accelerate <motion>")
+         * >     .argType("motion", RegCmd.ArgTypes.vec3())
+         * >     // 玩家至少有 2 级权限才能执行（一般作弊命令的权限）
+         * >     .requires(s => s.hasPermission(2))
+         * >     .executes((context, args) => {
+         * >         let player = context.getSource().getPlayer();
+         * >         if (player == null) {
+         * >             context.getSource().sendFailure(Component.literal("调用者不是玩家"));
+         * >             return 0;
+         * >         }
+         * >         player.addDeltaMovement(args.motion);
+         * >         context.getSource().sendSuccess(Component.literal("已对调用者添加加速度"), true);
+         * >         return 1;
+         * >     });
+         * > ```
+         * 
+         * 或者使用预设好的 {@linkcode CmdBuilder.requiresOperator} 方法，这与 `.requires(s => s.hasPermission(2))` 是等价的：
+         * 
+         * > ```javascript
+         * > RegCmd.defineCommand("/accelerate <motion>")
+         * >     .argType("motion", RegCmd.ArgTypes.vec3())
+         * >     .requiresOperator()
+         * >     // 后续内容
+         * > ```
          * 
          * @param requirementPredicate 一个函数，接受一个 `CommandSourceStack` 作为参数，并返回一个布尔值，表示是否满足执行命令的要求。
          * @return                     当前 `CmdBuilder` 实例
@@ -511,8 +529,36 @@ declare namespace RegCmd {
          * 
          * @param argName      参数名
          * @param defaultValue 一个函数，返回当该参数未在命令中指定时的默认值。参数类型与 {@linkcode argType} 中为该参数设置的类型一致。
+         * @return             当前 `CmdBuilder` 示例
          */
         argDefault<S extends keyof P>(argName: S, defaultValue: () => P[S] extends CommandArgumentType<any, infer R> ? R : never): this;
+        /**
+         * 为一个参数设置建议函数。当玩家在聊天框输入命令时，
+         * 建议函数会被调用以提供输入补全。
+         * 
+         * > ```javascript
+         * > RegCmd.defineCommand("/greet <arg> [literal]")
+         * >     .argType("arg", RegCmd.ArgTypes.greedyString())
+         * >     .argSuggests("arg", (context, builder, args, literals) => {
+         * >         // `literals` 为 [example] 而非 [example, arg, literal]
+         * >         // 因为我们无法获取位于这个参数之后的字面量
+         * >
+         * >         builder.suggest("hello");
+         * >         builder.suggest("goodbye");
+         * >         // 现在玩家输入参数 <arg> 会看到补全 "hello" 与 "goodbye"
+         * >     })
+         * >     .executes((context, args, literals) => {
+         * >         // 你自己的 executes 函数
+         * >     });
+         * > ```
+         * 
+         * @param argName    参数名
+         * @param suggestion 建议函数
+         * @return           当前 `CmdBuilder` 示例
+         * 
+         * @since 1.0.1
+         */
+        argSuggests<S extends keyof P>(argName: S, suggestion: (context: Alias.CommandContext<Alias.CommandSourceStack>, builder: Alias.SuggestionsBuilder, args: Readonly<{[argName in keyof P]: P[argName] extends CommandArgumentType<any, infer R> ? R : never}>, literals: (string | null)) => void): this;
         /**
          * 为一个可选字面量设置默认值。
          * 
@@ -1138,5 +1184,3 @@ declare namespace RegCmd {
     function defineCommand(usage: string): CmdBuilder<{}>;
 
 }
-
-declare const RegCmd: RegCmd;
