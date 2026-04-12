@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-/// <reference path="ComponentStylizer.d.ts" />
+/// <reference path="../probe/ComponentStylizer.d.ts" />
 
 const ComponentStylizer = (() => {
 

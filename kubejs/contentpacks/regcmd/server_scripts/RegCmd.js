@@ -24,7 +24,7 @@
  * SOFTWARE.
  */
 
-/// <reference path="./RegCmd.d.ts" />
+/// <reference path="../probe/RegCmd.d.ts" />
 
 const RegCmd = (() => {
 
