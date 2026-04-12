@@ -114,14 +114,8 @@ let exported = {
         /** @type {MultiThreadic.Types.TypedMap<MultiThreadic.ThreadInfo>} */
         let threadInfo;
         if (threadInfos.containsKey(identifier)) {
-            threadInfo = threadInfos.get(identifier);
-            let thread = threadInfo.get("thread");
-            thread.interrupt();
-            // Wait 10 seconds
-            thread.join(10000);
-            if (thread.isAlive()) {
-                throw new Error("Thread with identifier '" + identifier + "' is still alive after interrupting and waiting for 10 seconds");
-            }
+            console.warn(`Thread with identifier '${identifier}' already exists, returning null. If you want to create a new thread, please use a different identifier or stop the previous thread`);
+            return null;
         }
         threadInfo = new $HashMap();
         let scope = $ScriptableObject.getTopLevelScope(task);
@@ -138,7 +132,40 @@ let exported = {
         //       interrupt them before create a new one
         return threadInfo.get("thread");
     },
-    sleep(millis, nanos) {
+    listThreads() {
+        let list = [];
+        threadInfos.keySet().forEach(s => list.push(s));
+        return list;
+    },
+    getThread(identifier) {
+        let threadInfo = threadInfos.get(identifier);
+        if (threadInfo == null) return null;
+        return threadInfo.get("thread");
+    },
+    stopThread(identifier, waitTimeInMillis) {
+        let threadInfo = threadInfos.get(identifier);
+        if (threadInfo == null) return true;
+        let thread = threadInfo.get("thread");
+        if (!thread.isAlive()) {
+            threadInfos.remove(identifier);
+            return true;
+        }
+        thread.interrupt();
+        waitTimeInMillis = waitTimeInMillis || 1000;
+        thread.join(waitTimeInMillis);
+        if (thread.isAlive()) {
+            return false;
+        } else {
+            threadInfos.remove(identifier);
+            return true;
+        }
+    },
+    stopThenNewThread(identifier, task, waitTimeInMillis) {
+        let stopped = exported.stopThread(identifier, waitTimeInMillis);
+        if (!stopped) return null;
+        return exported.newThread(identifier, task);
+    },
+    sleep(millis) {
         $Thread.sleep(millis);
     },
     CONFIG: CONFIG
@@ -150,6 +177,6 @@ return Object.freeze(exported);
 
 try {
     ContentPacks.putShared("pelemenguin.multithreadic", MultiThreadic);
-} catch (e) {
-    // Ignore as we are not in the KubeLoader environment
-}
+} catch (e) {}
+
+global.MultiThreadic = MultiThreadic;

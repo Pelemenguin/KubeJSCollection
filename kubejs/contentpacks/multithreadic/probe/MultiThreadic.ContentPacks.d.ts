@@ -26,7 +26,11 @@
 
 namespace Internal {
     interface ContentPacksBinding {
-        getShared(packName: "pelemenguin.regcmd"): typeof RegCmd;
-        getShared(scriptType: "server", packName: "pelemenguin.regcmd"): typeof RegCmd;
+        getShared(packName: "pelemenguin.multithreadic"): typeof MultiThreadic;
+        getShared(scriptType: "startup", packName: "pelemenguin.multithreadic"): typeof MultiThreadic;
     }
+}
+
+interface global {
+    MultiThreadic: MultiThreadic;
 }

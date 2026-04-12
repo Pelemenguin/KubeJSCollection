@@ -39,6 +39,10 @@ declare namespace MultiThreadic {
 
     function currentThread(): Alias.Thread;
     function newThread(identifier: string, task: () => void): Alias.Thread;
+    function listThreads(): string[];
+    function getThread(identifier: string): Alias.Thread;
+    function stopThread(identifier: string, waitTimeInMillis: number = 1000): boolean;
+    function stopThenNewThread(identifier: string, task: () => void, waitTimeInMillis: number = 1000): Alias.Thread;
     function sleep(millis: number): void;
 
 }
