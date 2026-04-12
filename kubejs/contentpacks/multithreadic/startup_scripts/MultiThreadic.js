@@ -95,6 +95,24 @@ let functionClass = $Function.__javaObject__;
 // call(arg0: Internal.Context_, arg1: Internal.Scriptable_, arg2: Internal.Scriptable_, arg3: any[]): any;
 let functionCallMethod = functionClass.getMethod("call", $Context, $Scriptable, $Scriptable, $Object.__javaObject__.arrayType());
 
+/**
+ * @param {string} identifier
+ * @param {() => void} runnable 
+ * @param {MultiThreadic.Types.TypedMap<MultiThreadic.ThreadInfo> | null} threadInfo
+ */
+let threadFactory = (identifier, runnable, threadInfo) => {
+    let scope = $ScriptableObject.getTopLevelScope(runnable);
+    let thread = new $Thread(() => {
+        // Rhino won't convert automatically as `invoke` accepts `Object[]`, not any specific types
+        // So we use manually converted `emptyArr`
+        let context = $Context.enter();
+        if (threadInfo) threadInfo.put("context", context);
+        functionCallMethod.invoke(runnable, context, scope, null, emptyArr);
+    }, CONFIG.THREAD_NAME_PREFIX + identifier);
+    if (threadInfo) threadInfo.put("thread", thread);
+    return thread;
+};
+
 // Force conversion
 let emptyArr = $Arrays["copyOf(java.lang.Object[],int)"]([], 0);
 
@@ -112,24 +130,13 @@ let exported = {
         }
 
         /** @type {MultiThreadic.Types.TypedMap<MultiThreadic.ThreadInfo>} */
-        let threadInfo;
-        if (threadInfos.containsKey(identifier)) {
+        let threadInfo = new $HashMap();
+        let existing = threadInfos.putIfAbsent(identifier, threadInfo);
+        if (existing != null) {
             console.warn(`Thread with identifier '${identifier}' already exists, returning null. If you want to create a new thread, please use a different identifier or stop the previous thread`);
             return null;
         }
-        threadInfo = new $HashMap();
-        let scope = $ScriptableObject.getTopLevelScope(task);
-        threadInfo.put("thread", new $Thread(() => {
-            // Rhino won't convert automatically as `invoke` accepts `Object[]`, not any specific types
-            // So we use manually converted `emptyArr`
-            let context = $Context.enter();
-            threadInfo.put("context", context);
-            functionCallMethod.invoke(task, context, scope, null, emptyArr);
-        }, CONFIG.THREAD_NAME_PREFIX + identifier));
-        threadInfos.put(identifier, threadInfo);
-        // TODO: Currently we are testing the creation of threads
-        //       After test, we should check if there is previously created threads in the global,
-        //       interrupt them before create a new one
+        threadFactory(identifier, task, threadInfo);
         return threadInfo.get("thread");
     },
     listThreads() {
