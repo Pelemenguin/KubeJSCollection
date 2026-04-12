@@ -540,7 +540,7 @@ declare namespace RegCmd {
          * > RegCmd.defineCommand("/greet <arg> [literal]")
          * >     .argType("arg", RegCmd.ArgTypes.string())
          * >     .argSuggests("arg", (context, builder, args, literals) => {
-         * >         // `literals` is e.g. [example] not [example, arg, literal]
+         * >         // `literals` is [example] not [example, arg, literal]
          * >         // because we cannot obtain literals that come after this argument
          * >
          * >         builder.suggest("hello");
