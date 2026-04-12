@@ -1,6 +1,6 @@
 /*
 !/.gitignore
-!/kubejs
+!/kubejs/contentpacks
 !/build.py
 !/README.md
 !/README.*.md
