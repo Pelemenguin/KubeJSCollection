@@ -631,7 +631,6 @@ CmdBuilder.prototype.genArgs = function(context) {
                 try {
                     value = type.getValue(context, argCopy);
                 } catch (e) {
-                    console.error(e);
                     let def = outerThis.defaultValues[argCopy];
                     if (def == undefined) {
                         value = undefined;
@@ -763,11 +762,19 @@ CmdBuilder.prototype.then = function(usage) {
 
 ServerEvents.commandRegistry(event => {
     console.info("[RegCmd] Begin command registration");
+    let registered = 0;
+    let currentTime = Date.now();
     for (let builder of ALL_BUILDERS) {
         console.info("[RegCmd] Registering command: /" + builder.commandArguments[0].literal);
-        builder.registerToEvent(event, c => event.register(c), true);
+        try {
+            builder.registerToEvent(event, c => event.register(c), true);
+        } catch (e) {
+            console.error(e);
+        }
+        registered++;
     }
-})
+    console.info(`[RegCmd] Successfully registered ${registered} command(s)! Took ${Date.now() - currentTime}ms`);
+});
 
 return exported;
 
