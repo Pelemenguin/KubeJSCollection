@@ -88,6 +88,14 @@ declare namespace EnumJS {
 
     }
 
+    function createEnum(className: string): EnumClassBuilder;
+
+    class EnumClassBuilder {
+        protected constructor(className: string);
+        protected className: string;
+        build<A extends string>(...values: A[]): Enum<A>;
+    }
+
     /**
      * Interface representing the generated Java enum class for type hints.
      */
@@ -111,17 +119,5 @@ declare namespace EnumJS {
      * Interface representing an enum instance for type hints.
      */
     interface GeneratedEnum extends Alias.Enum<GeneratedEnum> {}
-
-    /**
-     * Creates a new Java enum class.
-     * 
-     * @param className  The fully qualified name of the enum class, e.g. `com.example.MyEnum`
-     * @param components The list of enum instance names, e.g. `["RED", "GREEN", "BLUE"]`
-     * 
-     * @example
-     * let colors = EnumJS.createEnum("Color", ["RED", "GREEN", "BLUE"]);
-     * console.info(colors.valueOf("RED"));
-     */
-    function createEnum<A extends string>(className: string, components: A[]): Enum<A>
 
 }
