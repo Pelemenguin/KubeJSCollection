@@ -45,7 +45,7 @@ PackGen.createMetaData("fastjs")
 PelemenguinPacks.EnumJS = PackGen.createMetaData("enumjs")
     .withAuthors(["Pelemenguin"])
     .withName("EnumJS")
-    .withVersion("1.0")
+    .withVersion("1.1")
     .addDependency(KubeJSDependency)
     .withDescription("A KubeJS library for creating Java enums.")
     .build();
@@ -53,7 +53,7 @@ PelemenguinPacks.EnumJS = PackGen.createMetaData("enumjs")
 ModGen.createModInfo("enumjs", PelemenguinPacks.EnumJS)
     .withAuthors("Pelemenguin")
     .withLicense("MIT")
-    .withVersion("1.0")
+    .withVersion("1.1")
     .withDescription("A KubeJS library for creating Java enums.")
     .build();
 

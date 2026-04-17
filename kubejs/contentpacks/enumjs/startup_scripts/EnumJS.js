@@ -24,17 +24,28 @@ let loadSpecial = (className) => new $NativeJavaClass(currentContext, topLevelSc
 //#region - Java Classes
 
 // Java
-const $Integer = Java.loadClass("java.lang.Integer");
+const $Integer  = Java.loadClass("java.lang.Integer");
+const $Function = Java.loadClass("java.util.function.Function");
 
 // ASM
 const $ClassWriter = loadSpecial("org.objectweb.asm.ClassWriter");
 const $Opcodes     = loadSpecial("org.objectweb.asm.Opcodes");
 const $Type        = loadSpecial("org.objectweb.asm.Type");
 
+// Minecraft
+const $StringRepresentable = Java.loadClass("net.minecraft.util.StringRepresentable");
+
 // Rhino
 const $DefiningClassLoader = Java.loadClass("dev.latvian.mods.rhino.DefiningClassLoader");
+const $NativeJavaMethod    = Java.loadClass("dev.latvian.mods.rhino.NativeJavaMethod");
+
+// KubeJS
+/** @type {typeof Internal.ScriptManager} */
+const $ScriptManager = loadSpecial("dev.latvian.mods.kubejs.script.ScriptManager");
 
 const EnumJSClassLoader = new $DefiningClassLoader();
+
+const $StringRepresentable_getSerizliedName_SRG = "m_7912_";
 
 //#endregion
 
@@ -114,12 +125,25 @@ let generateEnumCode = function(cw, internalName, components) {
     valueOf.visitEnd();
 }
 
+/**
+ * @param {string[]} components 
+ * @param {EnumJS.EnumClassBuilder["stringRepresentableCode"]} code 
+ */
+let generateStringRepresentableCode = function(cw, components, code) {
+    let getSerizliedName = cw.visitMethod($Opcodes.ACC_PUBLIC, $StringRepresentable_getSerizliedName_SRG, "()Ljava/lang/String;", null, null);
+    getSerizliedName.visitCode();
+    code(getSerizliedName);
+    getSerizliedName.visitMaxs(0, 0);
+    getSerizliedName.visitEnd();
+};
+
 //#endregion
 
 /** @type {typeof EnumJS} */
 let exported = {
     EnumClassBuilder: function(className) {
         this.className = className;
+        this.customGetSerializedName = false;
     },
     createEnum(className) {
         return new exported.EnumClassBuilder(className);
@@ -146,14 +170,63 @@ exported.EnumClassBuilder.prototype.build = function() {
                                          // as Java String's replace method is different from JS's.
     let internalName = className.replace(/\./g, "/");
     let cw = new $ClassWriter($ClassWriter.COMPUTE_MAXS | $ClassWriter.COMPUTE_FRAMES);
-    cw.visit($Opcodes.V17, $Opcodes.ACC_PUBLIC | $Opcodes.ACC_FINAL | $Opcodes.ACC_ENUM | $Opcodes.ACC_SUPER, internalName, null, "java/lang/Enum", null);
+    let interfaces = [];
+    if (this.stringRepresentableCode || this.customStringRepresentable) {
+        interfaces.push("net/minecraft/util/StringRepresentable");
+    }
+    cw.visit($Opcodes.V17, $Opcodes.ACC_PUBLIC | $Opcodes.ACC_FINAL | $Opcodes.ACC_ENUM | $Opcodes.ACC_SUPER, internalName, null, "java/lang/Enum", interfaces);
 
     generateEnumCode(cw, internalName, components);
 
+    if (this.customStringRepresentable) {
+        // Set this field
+        cw.visitField($Opcodes.ACC_PRIVATE | $Opcodes.ACC_STATIC, "$getSerializedNameFunction", "Ljava/util/function/Function;", null, null).visitEnd();
+        let getSerizliedName = cw.visitMethod($Opcodes.ACC_PUBLIC, "getSerializedName", "()Ljava/lang/String;", null, null);
+        getSerizliedName.visitCode();
+        getSerizliedName.visitFieldInsn($Opcodes.GETSTATIC, internalName, "$getSerializedNameFunction", "Ljava/util/function/Function;");
+        getSerizliedName.visitVarInsn($Opcodes.ALOAD, 0);
+        getSerizliedName.visitMethodInsn($Opcodes.INVOKEINTERFACE, "java/util/function/Function", "apply", "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+        getSerizliedName.visitTypeInsn($Opcodes.CHECKCAST, "java/lang/String");
+        getSerizliedName.visitInsn($Opcodes.ARETURN);
+        getSerizliedName.visitMaxs(0, 0);
+        getSerizliedName.visitEnd();
+    } else if (this.stringRepresentableCode) {
+        generateStringRepresentableCode(cw, components, this.stringRepresentableCode);
+    }
+
     let bytes = cw.toByteArray();
     let clazz = EnumJSClassLoader.defineClass(className, bytes);
-    return new $NativeJavaClass(currentContext, topLevelScope, clazz);
-}
+    let result = new $NativeJavaClass(currentContext, topLevelScope, clazz);
+
+    if (this.customStringRepresentable) {
+        let field = clazz.getDeclaredField("$getSerializedNameFunction");
+        field.setAccessible(true);
+        let csr = this.customStringRepresentable;
+        field.set(null, new JavaAdapter(
+            $Function,
+            {
+                apply: csr
+            }
+        ));
+    }
+
+    return result;
+};
+
+/** @type {EnumJS.EnumClassBuilder["stringRepresentable"]} */
+exported.EnumClassBuilder.prototype.stringRepresentable = function(getter) {
+    if (getter) {
+        this.customStringRepresentable = getter;
+    } else {
+        this.stringRepresentableCode = (mv) => {
+            // return value.name;
+            mv.visitVarInsn($Opcodes.ALOAD, 0);
+            mv.visitMethodInsn($Opcodes.INVOKEVIRTUAL, this.className.replace(/\./g, "/"), "name", "()Ljava/lang/String;", false);
+            mv.visitInsn($Opcodes.ARETURN);
+        };
+    }
+    return this;
+};
 
 return Object.freeze(exported);
 

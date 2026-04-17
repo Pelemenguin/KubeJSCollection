@@ -32,15 +32,16 @@
  * Use the {@linkcode createEnum} method to create a new Java `enum`.
  * 
  * > ```javascript
- * > let colors = EnumJS.createEnum("Color", ["RED", "GREEN", "BLUE"]);
+ * > let colors = EnumJS.createEnum("Color")
+ * >     .build("RED", "GREEN", "BLUE");
  * > ```
  * 
  * The return value of `createEnum` is a Java class.
  * You can directly access the static methods of this Java class via `colors`:
  * 
  * > ```javascript
+ * > colors.GREEN;          // Get the GREEN enum instance
  * > colors.valueOf("RED"); // Get the RED enum instance
- * > 
  * > colors.values();       // Get an array of all enum instances
  * > ```
  * 
@@ -88,36 +89,84 @@ declare namespace EnumJS {
 
     }
 
+    /**
+     * Creates a new Java enum class.
+     * 
+     * @param className The class name of the enum class (Full qualified name, e.g. `com.exmaple.ExampleEnum`)
+     * 
+     * @since 1.1: No longer directly accepts an array of enum instances to build the Java enum class.
+     * 
+     * @example
+     * let ExampleEnum = EnumJS.createEnum("ExampleEnum")
+     *     .build("Value1", "Value2", "Value3");
+     * console.info(ExampleEnum.Value1);
+     */
     function createEnum(className: string): EnumClassBuilder;
 
+    /**
+     * Builder for creating Java enum classes.
+     * 
+     * @since 1.1
+     */
     class EnumClassBuilder {
         protected constructor(className: string);
         protected className: string;
+        protected stringRepresentableCode?: ((methodVisitor: any) => void);
+        protected customStringRepresentable?: (value: GeneratedEnum<string>) => void;
+        /**
+         * Builds the Java enum class.
+         * 
+         * @param values Names for the enum instances
+         * @return       The built Java enum class
+         * 
+         * @since 1.1
+         */
         build<A extends string>(...values: A[]): Enum<A>;
+        /**
+         * Makes the generated enum class implement the `net.minecraft.util.StringRepresentable` interface.
+         * 
+         * @param getter A function to get the string representation of the enum instance.
+         *               When omitted, the enum instance's name will be used as its string representation by default
+         * @return       The current builder instance
+         * 
+         * @since 1.1
+         */
+        stringRepresentable(getter: (value: GeneratedEnum<string>) => void): EnumClassBuilder;
     }
+
+    /**
+     * Type representing the generated Java enum class for type hints.
+     * 
+     * @since 1.1
+     */
+    type Enum<E extends string> = {[K in E]: GeneratedEnum<K>} & _Enum<E>;
 
     /**
      * Interface representing the generated Java enum class for type hints.
      */
-    interface Enum<E extends string> {
+    interface _Enum<E extends string> {
         /**
          * Gets the enum instance corresponding to the given name.
          * 
          * @param value The name of the enum instance
          * @return      The enum instance with the matching name
          */
-        valueOf(value: E): GeneratedEnum;
+        valueOf<S extends E>(value: S): GeneratedEnum<S>;
         /**
          * Returns an array containing all enum instances of this enum class.
          * 
          * @return Array of enum instances
          */
-        values(): GeneratedEnum[];
+        values(): GeneratedEnum<E>[];
     }
 
     /**
      * Interface representing an enum instance for type hints.
+     * 
+     * @since 1.1: 添加了一个泛型参数来表示当前枚举实例的名称
      */
-    interface GeneratedEnum extends Alias.Enum<GeneratedEnum> {}
+    interface GeneratedEnum<E extends string> extends Alias.Enum<GeneratedEnum<E>> {
+        name(): E;
+    }
 
 }
