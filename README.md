@@ -4,7 +4,7 @@
 
 I don't know what to write, so let's just write some KubeJS library stuff🐧
 
-## 使用
+## Usage
 
 GitHub Release will publish two types of files:
 
