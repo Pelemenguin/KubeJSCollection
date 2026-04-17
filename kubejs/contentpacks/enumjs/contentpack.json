@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "authors": [
+    "Pelemenguin"
+  ],
+  "dependencies": [
+    {
+      "ordering": "BEFORE",
+      "type": "OPTIONAL",
+      "id": "kubejs"
+    }
+  ],
+  "id": "enumjs",
+  "name": "EnumJS",
+  "description": "A KubeJS library for creating Java enums."
+}
