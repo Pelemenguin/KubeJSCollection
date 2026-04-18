@@ -57,6 +57,14 @@ ModGen.createModInfo("enumjs", PelemenguinPacks.EnumJS)
     .withDescription("A KubeJS library for creating Java enums.")
     .build();
 
+PelemenguinPacks.LavaAdapter = PackGen.createMetaData("lava_adapter")
+    .withAuthors(["Pelemenguin"])
+    .withName("LavaAdapter")
+    .withVersion("1.0")
+    .addDependency(KubeJSDependency)
+    .withDescription("[PLACEHOLDER]")
+    .build();
+
 // ===== DEPRECATED ===== //
 // PackGen.createMetaData("multithreadic")
 //     .withName("MultiThreadic")
