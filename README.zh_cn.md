@@ -20,4 +20,5 @@ GitHub Release 中将会发布两种文件：
 
 - [`ComponentStylizer`](https://github.com/Pelemenguin/KubeJSCollection/releases/tag/ComponentStylizer-v1.0) - 用于方便地设置组件样式
 - [`EnumJS`](https://github.com/Pelemenguin/KubeJSCollection/releases/tag/EnumJS-v1.1) - 用于创建 Java 枚举类
+- [`LavaAdapter`](https://github.com/Pelemenguin/KubeJSCollection/releases/tag/LavaAdapter-v1.0) - 用于继承 Java 类或者实现 Java 接口
 - [`RegCmd`](https://github.com/Pelemenguin/KubeJSCollection/releases/tag/RegCmd-v1.0.1) - 用于简化命令注册

@@ -20,4 +20,5 @@ or set `exclude` in `jsconfig.json` to exclude the unnecessary files.
 
 - [`ComponentStylizer`](https://github.com/Pelemenguin/KubeJSCollection/releases/tag/ComponentStylizer-v1.0) - For easily setting component styles
 - [`EnumJS`](https://github.com/Pelemenguin/KubeJSCollection/releases/tag/EnumJS-v1.1) - For creating Java enum classes
+- [`LavaAdapter`](https://github.com/Pelemenguin/KubeJSCollection/releases/tag/LavaAdapter-v1.0) - For extending Java classes or implementing Java interfaces
 - [`RegCmd`](https://github.com/Pelemenguin/KubeJSCollection/releases/tag/RegCmd-v1.0.1) - For simplifying command registry
