@@ -70,7 +70,7 @@
  * ---
  * 
  * @author Pelemenguin
- * @version 1.0
+ * @version 1.1
  * @license MIT
  * @copyright Pelemenguin 2026
  */
