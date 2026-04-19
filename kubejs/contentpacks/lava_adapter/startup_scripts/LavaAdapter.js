@@ -102,12 +102,14 @@ let getAllMethodOverloads = (clazz, implemented, methodCache, metClasses) => {
 
 //#endregion
 
+//#region - AdapterBuilder
+
 let AdapterBuilder = function(superClass) {
     this.superClass
     if (superClass) {
         this.superClass = checkAndGetJavaClass(superClass);
     } else {
-        this.superClass = $Object.__javaObject__;
+        this.superClass = $Object;
     }
 
     this.superInterfaces = [];
@@ -492,6 +494,8 @@ AdapterBuilder.prototype.asClass = function() {
 
     return result;
 };
+
+//#endregion
 
 /** @type {typeof LavaAdapter} */
 let exported = {
