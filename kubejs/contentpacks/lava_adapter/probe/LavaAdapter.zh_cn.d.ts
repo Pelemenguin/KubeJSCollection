@@ -25,13 +25,13 @@
  */
 
 /**
- * LavaAdapter is a KubeJS JavaScript library for creating subclasses of Java classes or implementing Java interfaces.
+ * LavaAdapter 是一个用于创建继承 Java 类或实现 Java 接口的 KubeJS JavaScript 库。
  * 
- * ## Usage
+ * ## 使用
  * 
- * ### Extending
+ * ### 继承
  * 
- * Use {@linkcode LavaAdapter.extend} to start defining a Java subclass:
+ * 通过 {@linkcode LavaAdapter.extend} 来开始定义 Java 子类：
  * 
  * > ```javascript
  * > const $Item = Java.loadClass("net.minecraft.world.item.Item");
@@ -39,8 +39,8 @@
  * >     .asClass();
  * > ```
  * 
- * The resulting class `ExampleClass` will be a subclass of `net.minecraft.world.item.Item`
- * and can be used as a normal `Item`.
+ * 这样定义的类 `ExampleClass` 将会是一个 `net.minecraft.world.item.Item` 的子类，
+ * 可以当成一个正常的 `Item` 使用。
  * 
  * > ```javascript
  * > const $Item$Properties = Java.loadClass("net.minecraft.world.item.Item$Properties");
@@ -49,79 +49,81 @@
  * > });
  * > ```
  * 
- * ### Overriding
+ * ### 重写
  * 
- * Use the {@linkcode LavaAdapter.AdapterBuilder.override override} method to override a specified Java method:
+ * 通过 {@linkcode LavaAdapter.AdapterBuilder.override override} 方法来重写一个指定的 Java 方法：
  * 
  * > ```javascript
  * > const $Item = Java.loadClass("net.minecraft.world.item.Item");
  * > const ExampleClass = LavaAdapter.extend($Item)
- * >             // method name    // implementation function
+ * >             // 方法名称        // 实现函数
  * >     .override("appendHoverText", function(itemStack, level, componentList, tooltipFlag) {
  * >         componentList.add(Component.literal("Tooltip example!").gray());
  * >     })
  * >     .asClass();
  * > ```
  * 
- * Note that `"appendHoverText"` here should not be an SRG name.
- * LavaAdapter looks up the method on the `prototype` of the superclass or superinterface.
+ * 注意这里的 `"appendHoverText"` 不需要 SRG 名。
+ * LavaAdapter 会从父类或父接口的 `prototype` 上寻找方法。
  * 
- * You can also directly pass the method object you want to override:
+ * 当然，你也可以直接传入需要重写的方法对象：
  * 
  * > ```javascript
  * > const $Item = Java.loadClass("net.minecraft.world.item.Item");
  * > const item$appendHoverText = Items.AIR.appendHoverText;
- * >                           // Obtain the appendHoverText method from an existing Item instance
+ * >                           // 从一个已有的 Item 实例上获取 appendHoverText 方法
  * > const ExampleClass = LavaAdapter.extend($Item)
- * >            // Use the obtained Java method object here
+ * >            // 这里使用获取到的 Java 方法对象
  * >     .override(item$appendHoverText, function(itemStack, level, componentList, tooltipFlag) {
  * >         componentList.add(Component.literal("Tooltip example!").gray());
  * >     })
  * >     .asClass();
  * > ```
  * 
- * ### Implementing Interfaces
+ * ### 接口实现
  * 
- * Use the {@linkcode LavaAdapter.AdapterBuilder.implement implement} method to implement a specified Java interface.
- * See the documentation of that method for concrete examples.
+ * 通过 {@linkcode LavaAdapter.AdapterBuilder.implement implement} 方法来实现一个指定的 Java 接口。
+ * 具体实例查看该方法文档。
  * 
- * ### `this` and `super` Calls
+ * ### `this` 与 `super` 调用
  * 
- * `this` inside a method defined by LavaAdapter points to the current instance.
+ * `this` 在 LavaAdapter 定义的方法中指向当前实例。
  * 
- * Additionally, `this` has a special property {@linkcode SuperMethods.$super $super},
- * which can be used to call superclass methods.
+ * 除此之外，`this` 上还有一个特殊属性 {@linkcode SuperMethods.$super $super}，
+ * 可以用来调用父类的方法。
  * 
  * > ```javascript
  * > const $HashMap = Java.loadClass("java.util.HashMap");
  * > const PenguinMap = LavaAdapter.extend($HashMap)
  * >     .override("get", function(key) {
- * >         console.info("You can only get the value for 'penguin'!");
- * >                         // Let superclass HashMap handle "get" logics
- * >         return this.$super.get("penguin");
+ * >         console.info("你只能拿到“企鹅”对应的值！")
+ * >                         // 让父类 HashMap 来处理 "get" 逻辑
+ * >         return this.$super.get("企鹅");
  * >     })
  * >     .asClass();
  * > 
  * > let map = new PenguinMap();
- * > map.put("penguin", "stone");
- * > map.put("otherKey", "otherValue");
+ * > map.put("企鹅", "石头");
+ * > map.put("其它键", "其它值");
  * > 
- * > console.info(map.get("otherKey"));
- * > // Console output:
- * > //   "You can only get the value for 'penguin'!"
- * > //   "stone"
+ * > console.info(map.get("其它键"));
+ * > // 控制台输出：
+ * > //   "你只能拿到“企鹅”对应的值！"
+ * > //   "石头"
  * > ```
  * 
  * ## KubeLoader
  * 
- * This module supports loading via KubeLoader.
- * When using KubeLoader, load it into your own script with:
+ * 该模块支持通过 KubeLoader 加载。
+ * 当使用 KubeLoader 加载时，使用：
  * 
  * > ```javascript
  * > const LavaAdapter = ContentPacks.getShared("pelemenguin.lava_adapter");
- * > // or more strictly:
+ * > // 或更严谨地：
  * > const LavaAdapter = ContentPacks.getShared("startup", "pelemenguin.lava_adapter");
  * > ```
+ * 
+ * 来将其加载的你自己的脚本中。
  * 
  * ---
  * 
@@ -133,19 +135,19 @@
 declare namespace LavaAdapter {
 
     /**
-     * Represents the intersection of all elements in a TypeScript tuple type.
+     * 用于表示某个 TypeScript 元组类型中全部元素的交叉类型。
      */
     type Intersection<I extends any[]> = I extends [infer I1, ...infer I2] ? I1 & Intersection<I2> : {};
     /**
-     * Represents the union of all elements in a TypeScript tuple type.
+     * 用于表示某个 TypeScript 元组类型中全部元素的联合类型。
      */
     type Union       <I extends any[]> = I extends [infer I1, ...infer I2] ? I1 | Union       <I2> : {};
     /**
-     * Represents the union of keys of all elements in a TypeScript tuple type.
+     * 用于表示某个 TypeScript 元组类型中全部元素的键的联合类型
      */
     type AnyKeyFrom  <I extends any[]> = I extends [infer I1, ...infer I2] ? keyof I1 | AnyKeyFrom<I2> : never;
     /**
-     * Finds the method type corresponding to a key `K` in the instance type of class `C` or multiple types `I[]`.
+     * 找到一个类 `C` 的实例类型与多个类型 `I[]` 中，某个键 `K` 对应的方法类型。
      */
     type OneOfMethods<C extends abstract new (...args: any[]) => any, I extends any[], K extends (keyof InstanceType<C>) | AnyKeyFrom<I>>
         = InstanceType<C>[K] extends (...args: any[]) => any ? InstanceType<C>[K]
@@ -153,41 +155,41 @@ declare namespace LavaAdapter {
             ? (I1[K] extends (...args: any[]) => any ? I1[K] : OneOfMethods<any, I2, K>)
             : ((...args: unknown[]) => unknown);
     /**
-     * A type that includes a readonly property {@linkcode SuperMethods.$super $super} of type `T`.
+     * 一个包含 {@linkcode SuperMethods.$super $super} 只读属性的类型，`$super` 的类型为 `T`。
      */
     type SuperMethods<T> = {
         /**
-         * A special object. Calling a method on this object will actually call the superclass method of the same name.
+         * 一个特殊对象，调用该对象上的方法时，实际会调用父类的同名方法。
          */
         readonly $super: T;
     };
     /**
-     * Indicates that this type also has a {@linkcode SuperMethods.$super $super} property for calling superclass methods.
+     * 表示这个类型上同时拥有一个 {@linkcode SuperMethods.$super $super} 属性，用于调用父类方法。
      */
     type IntersectionWithSuperMethods<T> = T & SuperMethods<T>;
 
     /**
-     * Interface for building Java adapters.
+     * 用于构建 Java 适配器的接口
      */
     interface AdapterBuilder<C extends abstract new (...args: any[]) => any, I extends any[]> {
         /**
-         * Specifies the Java interfaces to implement.
+         * 指定要实现的 Java 接口。
          * 
-         * Can pass a single interface:
+         * 可以传入单个接口：
          * 
          * > ```javascript
          * > const $Runnable = Java.loadClass("java.lang.Runnable");
          * > const CustomRunnable = LavaAdapter.extend()
          * >     .implement($Runnable)
          * >     .override("run", function() {
-         * >         console.info("Running!");
+         * >         console.info("正在运行！");
          * >     })
          * >     .asClass();
          * > 
          * > new CustomRunnable().run();
          * > ```
          * 
-         * Can also pass multiple interfaces:
+         * 也可以传入多个接口
          * 
          * > ```javascript
          * > const $Runnable = Java.loadClass("java.lang.Runnable");
@@ -195,79 +197,79 @@ declare namespace LavaAdapter {
          * > const CustomRunnable = LavaAdapter.extend()
          * >     .implement($Runnable, $Function)
          * >     .override("run", function() {
-         * >         // implement Runnable's run method
+         * >         // 实现 Runnable 的 run 方法
          * >     })
          * >     .override("apply", function(value) {
-         * >         // implement Function's apply method
+         * >         // 实现 Function 的 apply 方法
          * >     })
          * >     .asClass();
          * > ```
          * 
-         * @param superInterface The Java interfaces to implement. Can be one or more interfaces, or an array of interfaces.
-         *                       These interfaces should be obtained via `Java.loadClass`.
-         * @return               The **current** `AdapterBuilder` with updated type parameters indicating the new interfaces to implement.
+         * @param superInterface 要实现的 Java 接口，可以传入一个或多个接口，或者一个包含接口的数组。
+         *                       这些接口应当通过 `Java.loadClass` 获取
+         * @return               **当前** `AdapterBuilder`，并更新类型参数以表示要实现新的接口
          */
         implement<I2 extends any[]>(...superInterface: I2): AdapterBuilder<C, [...I, ...I2]>;
         /**
-         * Overrides a Java method.
+         * 重写一个 Java 方法。
          * 
-         * See the {@link LavaAdapter module documentation} for examples.
+         * 示例参见 {@link LavaAdapter 模块文档} 。
          * 
-         * @param methodName     The method name.
-         * @param implementation A JavaScript function providing the concrete implementation.
-         * @return               The current `AdapterBuilder`.
+         * @param methodName     方法名称
+         * @param implementation 一个 JavaScript 函数以提供具体实现
+         * @return               当前 `AdapterBuilder`
          */
         override<K extends (keyof InstanceType<C>) | AnyKeyFrom<I>>(
             methodName: K,
             implementation: (this: IntersectionWithSuperMethods<InstanceType<C & Intersection<I>>>, ...args: Parameters<OneOfMethods<C, I, K>>) => ReturnType<OneOfMethods<C, I, K>> | void
         ): this;
         /**
-         * Overrides a Java method.
+         * 重写一个 Java 方法。
          * 
-         * See the {@link LavaAdapter module documentation} for examples.
+         * 示例参见 {@link LavaAdapter 模块文档} 。
          * 
-         * @param methodName     The method name.
-         * @param implementation A JavaScript function providing the concrete implementation.
-         * @return               The current `AdapterBuilder`.
+         * @param methodName     方法名称
+         * @param implementation 一个 JavaScript 函数以提供具体实现
+         * @return               当前 `AdapterBuilder`
          */
         override(methodName: string, implementation: (this: IntersectionWithSuperMethods<InstanceType<C & Intersection<I>>>, ...args: unknown[]) => any): this;
         /**
-         * Overrides a Java method.
+         * 重写一个 Java 方法。
          * 
-         * See the {@link LavaAdapter module documentation} for examples.
+         * 示例参见 {@link LavaAdapter 模块文档} 。
          * 
-         * @param method         A Java method object obtained from a Java object.
-         * @param implementation A JavaScript function providing the concrete implementation.
-         * @return               The current `AdapterBuilder`.
+         * @param methodName     从一个 Java 对象上获取的 Java 方法对象
+         * @param implementation 一个 JavaScript 函数以提供具体实现
+         * @return               当前 `AdapterBuilder`
          */
         override<K extends (keyof InstanceType<C>) | AnyKeyFrom<I>, M extends (C[K] | Intersection<I>[K])>(
             method: M,
             implementation: (this: IntersectionWithSuperMethods<InstanceType<C & Intersection<I>>>, ...args: Parameters<M>) => ReturnType<M> | void
         ): this;
         /**
-         * Finishes the adapter definition and returns a Java class.
+         * 完成适配器定义，并返回一个 Java 类。
          * 
-         * @return The generated Java class.
+         * @return 生成的 Java 类
          */
         asClass(): C & (new (...args: any[]) => Intersection<I>);
     }
 
     /**
-     * Starts an {@linkcode AdapterBuilder} that **directly extends** `java.lang.Object`.
+     * 开启一个 {@linkcode AdapterBuilder}，并**直接继承**自 `java.lang.Object`。
      * 
-     * See the {@link LavaAdapter module documentation} for examples.
+     * 示例参见 {@link LavaAdapter 模块文档}。
      * 
-     * @param superClass The Java class to extend, obtained via `Java.loadClass`.
-     * @return           The created `AdapterBuilder`.
+     * @param superClass 要继承的 Java 类，通过 `Java.loadClass` 获取
+     * @return           创建的 `AdapterBuilder`
      */
     function extend(): AdapterBuilder<new () => {}, []>;
     /**
-     * Specifies a Java class to extend and starts an {@linkcode AdapterBuilder}.
+     * 指定一个要继承的 Java 类，并开启一个 {@linkcode AdapterBuilder}。
      * 
-     * See the {@link LavaAdapter module documentation} for examples.
+     * 示例参见 {@link LavaAdapter 模块文档}。
      * 
-     * @param superClass The Java class to extend, obtained via `Java.loadClass`.
-     * @return           The created `AdapterBuilder`.
+     * @param superClass 要继承的 Java 类，通过 `Java.loadClass` 获取
+     * @return           创建的 `AdapterBuilder`
      */
     function extend<C extends abstract new (...args: any[]) => any>(superClass: C): AdapterBuilder<C, []>;
 
