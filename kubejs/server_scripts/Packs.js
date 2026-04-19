@@ -62,7 +62,14 @@ PelemenguinPacks.LavaAdapter = PackGen.createMetaData("lava_adapter")
     .withName("LavaAdapter")
     .withVersion("1.0")
     .addDependency(KubeJSDependency)
-    .withDescription("[PLACEHOLDER]")
+    .withDescription("A KubeJS library for extending Java classes or implementing Java interfaces.")
+    .build();
+
+ModGen.createModInfo("lava_adapter", PelemenguinPacks.LavaAdapter)
+    .withAuthors("Pelemenguin")
+    .withLicense("MIT")
+    .withVersion("1.0")
+    .withDescription("A KubeJS library for extending Java classes or implementing Java interfaces.")
     .build();
 
 // ===== DEPRECATED ===== //

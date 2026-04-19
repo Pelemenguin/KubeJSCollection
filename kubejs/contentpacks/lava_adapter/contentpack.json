@@ -12,5 +12,5 @@
   ],
   "id": "lava_adapter",
   "name": "LavaAdapter",
-  "description": "[PLACEHOLDER]"
+  "description": "A KubeJS library for extending Java classes or implementing Java interfaces."
 }
