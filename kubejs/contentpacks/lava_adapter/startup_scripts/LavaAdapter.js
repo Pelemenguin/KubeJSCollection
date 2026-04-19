@@ -75,6 +75,16 @@ let getInternalName = (classObject) => {
     return (classObject.__javaObject__.getName() + "").replace(/\./g, "/");
 }
 
+// Dumb Rhino would interpret map.containsKey, map.put, map.get, etc.
+// as getting values associated with key "containsKey", "put", "get", etc.
+// as long as these keys exists in the map.
+// Rhino, why are you doing this?
+let tempMap = new $HashMap();
+const mapContainsKey = tempMap.containsKey;
+const mapPut         = tempMap.put;
+const mapGet         = tempMap.get;
+const mapForEach     = tempMap.forEach;
+
 /**
  * 
  * @param {Internal.Class<?>} clazz 
@@ -90,10 +100,10 @@ let getAllMethodOverloads = (clazz, implemented, methodCache, metClasses) => {
         clazz.getDeclaredMethods().forEach(/** @param {Internal.Method} m */ m => {
             let methodName = m.getName();
             if (!implemented.contains(methodName)) return;
-            if (!methodCache.containsKey(methodName)) {
-                methodCache.put(methodName, new $HashMap());
+            if (!mapContainsKey.call(methodCache, methodName)) {
+                mapPut.call(methodCache, methodName, new $HashMap());
             }
-            methodCache.get(methodName).putIfAbsent($Type.getMethodDescriptor(m), m);
+            mapGet.call(methodCache, methodName).putIfAbsent($Type.getMethodDescriptor(m), m);
         });
         clazz.getInterfaces().forEach(i => getAllMethodOverloads(i, implemented, methodCache, metClasses));
         clazz = clazz.getSuperclass();
@@ -477,11 +487,11 @@ AdapterBuilder.prototype.asClass = function() {
         mv.visitEnd();
     });
 
-    methodCache.forEach((methodName, descriptorToMethodMap) => {
-        descriptorToMethodMap.forEach((descriptor, method) => {
+    mapForEach.call(methodCache, (methodName, descriptorToMethodMap) => {
+        mapForEach.call(descriptorToMethodMap, (descriptor, method) => {
             generateMethod(cw, className, methodName, descriptor, method);
         });
-    })
+    });
 
     cw.visitEnd();
 
