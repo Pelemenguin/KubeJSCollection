@@ -12,7 +12,7 @@ declare namespace LavaAdapter {
             ? (I1[K] extends (...args: any[]) => any ? I1[K] : OneOfMethods<any, I2, K>)
             : ((...args: unknown[]) => unknown);
     type SuperMethods<T> = {
-        [K in keyof T as `super$${K}`]: T[K] extends Function ? T[K] : never;
+        $super: T;
     };
     type IntersectionWithSuperMethods<T> = T & SuperMethods<T>;
 

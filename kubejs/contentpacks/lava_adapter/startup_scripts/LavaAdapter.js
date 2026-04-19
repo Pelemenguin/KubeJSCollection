@@ -56,7 +56,7 @@ const $NativeJavaMethod$getFunctionName = $NativeJavaMethod$class.getMethod("get
 
 //#endregion
 
-//#region - Helper functions
+//#region - Helper Functions
 
 /**
  * @param {any} classObject 
@@ -116,6 +116,73 @@ let getAllMethodOverloads = (clazz, methodCache, metClasses) => {
         clazz = clazz.getSuperclass();
     }
 };
+
+//#endregion
+
+//#region - Super Method Delegate
+
+let SuperMethodDelegate = (() => {
+
+let cw = new $ClassWriter($ClassWriter.COMPUTE_MAXS | $ClassWriter.COMPUTE_FRAMES);
+cw.visit($Opcodes.V1_8, $Opcodes.ACC_PUBLIC, "SuperMethodDelegate", null, "dev/latvian/mods/rhino/NativeJavaObject", null);
+
+let ctor = cw.visitMethod($Opcodes.ACC_PUBLIC, "<init>", "(Ldev/latvian/mods/rhino/Scriptable;Ljava/lang/Object;Ljava/lang/Class;ZLdev/latvian/mods/rhino/Context;)V", null, null);
+ctor.visitCode();
+
+ctor.visitVarInsn($Opcodes.ALOAD, 0);
+ctor.visitVarInsn($Opcodes.ALOAD, 1);
+ctor.visitVarInsn($Opcodes.ALOAD, 2);
+ctor.visitVarInsn($Opcodes.ALOAD, 3);
+ctor.visitVarInsn($Opcodes.ILOAD, 4);
+ctor.visitVarInsn($Opcodes.ALOAD, 5);
+ctor.visitMethodInsn($Opcodes.INVOKESPECIAL, "dev/latvian/mods/rhino/NativeJavaObject", "<init>", "(Ldev/latvian/mods/rhino/Scriptable;Ljava/lang/Object;Ljava/lang/Class;ZLdev/latvian/mods/rhino/Context;)V", false);
+ctor.visitInsn($Opcodes.RETURN);
+ctor.visitMaxs(0, 0);
+ctor.visitEnd();
+
+for (let secondParameter of ["Ldev/latvian/mods/rhino/Symbol;", "I"]) {
+    let mv = cw.visitMethod($Opcodes.ACC_PUBLIC, "get", "(Ldev/latvian/mods/rhino/Context;" + secondParameter + "Ldev/latvian/mods/rhino/Scriptable;)Ljava/lang/Object;", null, null);
+    mv.visitCode();
+    // Directly delegate to super
+    mv.visitVarInsn($Opcodes.ALOAD, 0);
+    mv.visitVarInsn($Opcodes.ALOAD, 1);
+    mv.visitVarInsn(secondParameter == "I" ? $Opcodes.ILOAD : $Opcodes.ALOAD, 2);
+    mv.visitVarInsn($Opcodes.ALOAD, 3);
+    mv.visitMethodInsn($Opcodes.INVOKESPECIAL, "dev/latvian/mods/rhino/NativeJavaObject", "get", "(Ldev/latvian/mods/rhino/Context;" + secondParameter + "Ldev/latvian/mods/rhino/Scriptable;)Ljava/lang/Object;", false);
+    mv.visitInsn($Opcodes.ARETURN);
+    mv.visitMaxs(0, 0);
+    mv.visitEnd();
+}
+
+let mv = cw.visitMethod($Opcodes.ACC_PUBLIC, "get", "(Ldev/latvian/mods/rhino/Context;Ljava/lang/String;Ldev/latvian/mods/rhino/Scriptable;)Ljava/lang/Object;", null, null);
+mv.visitCode();
+mv.visitVarInsn($Opcodes.ALOAD, 0);
+mv.visitVarInsn($Opcodes.ALOAD, 1);
+mv.visitLdcInsn("super$")
+// super.get(context, propertyName, scope)
+mv.visitVarInsn($Opcodes.ALOAD, 0);
+mv.visitVarInsn($Opcodes.ALOAD, 1);
+mv.visitVarInsn($Opcodes.ALOAD, 2);
+mv.visitVarInsn($Opcodes.ALOAD, 3);
+mv.visitMethodInsn($Opcodes.INVOKESPECIAL, "dev/latvian/mods/rhino/NativeJavaObject", "get", "(Ldev/latvian/mods/rhino/Context;Ljava/lang/String;Ldev/latvian/mods/rhino/Scriptable;)Ljava/lang/Object;", false);
+// Assert this is a NativeJavaMethod
+mv.visitTypeInsn($Opcodes.CHECKCAST, "dev/latvian/mods/rhino/NativeJavaMethod");
+// getFunctionName
+mv.visitMethodInsn($Opcodes.INVOKEVIRTUAL, "dev/latvian/mods/rhino/NativeJavaMethod", "getFunctionName", "()Ljava/lang/String;", false);
+// super.get(context, "super$" + <got function name>, scope)
+mv.visitMethodInsn($Opcodes.INVOKEVIRTUAL, "java/lang/String", "concat", "(Ljava/lang/String;)Ljava/lang/String;", false);
+mv.visitVarInsn($Opcodes.ALOAD, 3);
+mv.visitMethodInsn($Opcodes.INVOKESPECIAL, "dev/latvian/mods/rhino/NativeJavaObject", "get", "(Ldev/latvian/mods/rhino/Context;Ljava/lang/String;Ldev/latvian/mods/rhino/Scriptable;)Ljava/lang/Object;", false);
+mv.visitInsn($Opcodes.ARETURN);
+mv.visitMaxs(0, 0);
+mv.visitEnd();
+
+cw.visitEnd();
+let classBytes = cw.toByteArray();
+let SuperMethodDelegate = LavaAdapterClassLoader.defineClass("SuperMethodDelegate", classBytes);
+return new $NativeJavaClass(currentContext, topLevelScope, SuperMethodDelegate);
+
+})();
 
 //#endregion
 
@@ -496,6 +563,20 @@ let generateSuper = (cw, superClassName, className, methodName, methodDescriptor
     mv.visitEnd();
 };
 
+// Some function names are always in an object
+let checkMethodImplemented = (implementation, methodName) => {
+    switch (methodName) {
+        case "constructor":          return implementation.constructor          !== Object.prototype.constructor;
+        case "toString":             return implementation.toString             !== Object.prototype.toString;
+        case "toLocaleString":       return implementation.toLocaleString       !== Object.prototype.toLocaleString;
+        case "valueOf":              return implementation.valueOf              !== Object.prototype.valueOf;
+        case "hasOwnProperty":       return implementation.hasOwnProperty       !== Object.prototype.hasOwnProperty;
+        case "isPrototypeOf":        return implementation.isPrototypeOf        !== Object.prototype.isPrototypeOf;
+        case "propertyIsEnumerable": return implementation.propertyIsEnumerable !== Object.prototype.propertyIsEnumerable;
+        default: return methodName in implementation;
+    }
+};
+
 AdapterBuilder.prototype.asClass = function() {
     let className = "Adapter_" + AdapterIdCounter.getAndIncrement();
     let cw = new $ClassWriter($ClassWriter.COMPUTE_FRAMES | $ClassWriter.COMPUTE_MAXS);
@@ -518,6 +599,7 @@ AdapterBuilder.prototype.asClass = function() {
     cw.visitField($Opcodes.ACC_PUBLIC | $Opcodes.ACC_STATIC | $Opcodes.ACC_SYNTHETIC, "$IMPLEMENTATIONS", "Ldev/latvian/mods/rhino/NativeObject;", null, null).visitEnd();
     cw.visitField($Opcodes.ACC_PUBLIC | $Opcodes.ACC_STATIC | $Opcodes.ACC_SYNTHETIC, "$CONTEXT", "Ldev/latvian/mods/rhino/Context;", null, null).visitEnd();
     cw.visitField($Opcodes.ACC_PRIVATE | $Opcodes.ACC_SYNTHETIC, "$SELF", "Ldev/latvian/mods/rhino/NativeJavaObject;", null, null).visitEnd();
+    cw.visitField($Opcodes.ACC_PUBLIC | $Opcodes.ACC_SYNTHETIC, "$super", "LSuperMethodDelegate;", null, null).visitEnd();
 
     this.superClass.__javaObject__.getDeclaredConstructors().forEach(/** @param {Internal.Constructor<any>} c */ c => {
         /** @type {Internal.Class<?>[]} */
@@ -534,25 +616,45 @@ AdapterBuilder.prototype.asClass = function() {
             loadArg(mv, slot, p);
             slot += (p.getName() === "long" || p.getName() === "double") ? 2 : 1;
         }
+
+        let scopeSlot = slot++;
+        let contextSlot = slot;
+
         mv.visitMethodInsn($Opcodes.INVOKESPECIAL, getInternalName(this.superClass), "<init>", descriptor, false);
         // this.$SELF = new NativeJavaObject($IMPLEMENTATION.getParentScope(), this, null, $CONTEXT);
         mv.visitTypeInsn($Opcodes.NEW, "dev/latvian/mods/rhino/NativeJavaObject");
         mv.visitInsn($Opcodes.DUP);
         mv.visitFieldInsn($Opcodes.GETSTATIC, className, "$IMPLEMENTATIONS", "Ldev/latvian/mods/rhino/NativeObject;");
         mv.visitMethodInsn($Opcodes.INVOKEVIRTUAL, "dev/latvian/mods/rhino/NativeObject", "getParentScope", "()Ldev/latvian/mods/rhino/Scriptable;", false);
+        mv.visitInsn($Opcodes.DUP);
+        mv.visitVarInsn($Opcodes.ASTORE, scopeSlot);
         mv.visitVarInsn($Opcodes.ALOAD, 0);
         mv.visitInsn($Opcodes.ACONST_NULL);
         mv.visitFieldInsn($Opcodes.GETSTATIC, className, "$CONTEXT", "Ldev/latvian/mods/rhino/Context;");
+        mv.visitInsn($Opcodes.DUP);
+        mv.visitVarInsn($Opcodes.ASTORE, contextSlot);
         mv.visitMethodInsn($Opcodes.INVOKESPECIAL, "dev/latvian/mods/rhino/NativeJavaObject", "<init>", "(Ldev/latvian/mods/rhino/Scriptable;Ljava/lang/Object;Ljava/lang/Class;Ldev/latvian/mods/rhino/Context;)V", false);
         mv.visitFieldInsn($Opcodes.PUTFIELD, className, "$SELF", "Ldev/latvian/mods/rhino/NativeJavaObject;");
+        // this.$super = new SuperMethodDelegate($IMPLEMENTATION.getParentScope(), this, null, true, $CONTEXT)
+        mv.visitVarInsn($Opcodes.ALOAD, 0);
+        mv.visitTypeInsn($Opcodes.NEW, "SuperMethodDelegate");
+        mv.visitInsn($Opcodes.DUP);
+        mv.visitVarInsn($Opcodes.ALOAD, scopeSlot);
+        mv.visitVarInsn($Opcodes.ALOAD, 0);
+        mv.visitInsn($Opcodes.ACONST_NULL);
+        mv.visitInsn($Opcodes.ICONST_1);
+        mv.visitVarInsn($Opcodes.ALOAD, contextSlot);
+        mv.visitMethodInsn($Opcodes.INVOKESPECIAL, "SuperMethodDelegate", "<init>", "(Ldev/latvian/mods/rhino/Scriptable;Ljava/lang/Object;Ljava/lang/Class;ZLdev/latvian/mods/rhino/Context;)V", false);
+        mv.visitFieldInsn($Opcodes.PUTFIELD, className, "$super", "LSuperMethodDelegate;");
         mv.visitInsn($Opcodes.RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
     });
 
     mapForEach.call(methodCache, (/** @type {string} */ methodName, /** @type {Internal.Map<string, Internal.Method>} */ descriptorToMethodMap) => {
+        let methodImplemented = checkMethodImplemented(implementationMap, methodName);
         mapForEach.call(descriptorToMethodMap, (/** @type {string} */ descriptor, /** @type {Internal.Method} */ method) => {
-            if (methodName in implementationMap) {
+            if (methodImplemented) {
                 generateMethod(cw, className, methodName, descriptor, method);
             }
             generateSuper(cw, getInternalName(this.superClass), className, methodName, descriptor, method);
