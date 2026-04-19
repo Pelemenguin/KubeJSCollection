@@ -11,17 +11,21 @@ declare namespace LavaAdapter {
             : I extends [infer I1, ...infer I2]
             ? (I1[K] extends (...args: any[]) => any ? I1[K] : OneOfMethods<any, I2, K>)
             : ((...args: unknown[]) => unknown);
+    type SuperMethods<T> = {
+        [K in keyof T as `super$${K}`]: T[K] extends Function ? T[K] : never;
+    };
+    type IntersectionWithSuperMethods<T> = T & SuperMethods<T>;
 
     interface AdapterBuilder<C extends abstract new (...args: any[]) => any, I extends any[]> {
         implementing<I2 extends any[]>(...superInterface: I2): AdapterBuilder<C, [...I, ...I2]>;
         overriding<K extends (keyof InstanceType<C>) | AnyKeyFrom<I>>(
             methodName: K,
-            implementation: (this: InstanceType<C & Intersection<I>>, ...args: Parameters<OneOfMethods<C, I, K>>) => ReturnType<OneOfMethods<C, I, K>> | void
+            implementation: (this: IntersectionWithSuperMethods<InstanceType<C & Intersection<I>>>, ...args: Parameters<OneOfMethods<C, I, K>>) => ReturnType<OneOfMethods<C, I, K>> | void
         ): this;
-        overriding(methodName: string, implementation: (this: InstanceType<C & Intersection<I>>, ...args: unknown[]) => any): this;
+        overriding(methodName: string, implementation: (this: IntersectionWithSuperMethods<InstanceType<C & Intersection<I>>>, ...args: unknown[]) => any): this;
         overriding<K extends (keyof InstanceType<C>) | AnyKeyFrom<I>, M extends (C[K] | Intersection<I>[K])>(
             method: M,
-            implementation: (this: InstanceType<C & Intersection<I>>, ...args: Parameters<M>) => ReturnType<M> | void
+            implementation: (this: IntersectionWithSuperMethods<InstanceType<C & Intersection<I>>>, ...args: Parameters<M>) => ReturnType<M> | void
         ): this;
         asClass(): C & (new (...args: any[]) => Intersection<I>);
     }

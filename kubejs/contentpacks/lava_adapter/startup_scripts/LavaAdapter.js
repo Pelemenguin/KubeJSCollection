@@ -31,6 +31,7 @@ const $HashSet       = Java.loadClass("java.util.HashSet");
 const $HashMap       = Java.loadClass("java.util.HashMap");
 const $Set           = Java.loadClass("java.util.Set");
 const $AtomicInteger = Java.loadClass("java.util.concurrent.atomic.AtomicInteger");
+const $Modifier      =    loadSpecial("java.lang.reflect.Modifier");
 
 // ASM
 const $ClassWriter = loadSpecial("org.objectweb.asm.ClassWriter");
@@ -88,24 +89,30 @@ const mapForEach     = tempMap.forEach;
 /**
  * 
  * @param {Internal.Class<?>} clazz 
- * @param {Internal.Set<string>} implemented 
  * @param {Internal.Map<string, Internal.Map<string, Internal.Method>} methodCache 
  * methodName to descriptors
  * @param {Internal.Set<Internal.Class<?>>} metClasses
  */
-let getAllMethodOverloads = (clazz, implemented, methodCache, metClasses) => {
+let getAllMethodOverloads = (clazz, methodCache, metClasses) => {
     if (metClasses.contains(clazz)) return;
     metClasses.add(clazz);
     while (clazz != null) {
         clazz.getDeclaredMethods().forEach(/** @param {Internal.Method} m */ m => {
             let methodName = m.getName();
-            if (!implemented.contains(methodName)) return;
+            let methodModifiers = m.getModifiers();
+            // Skip non protected nor public method
+            if (!$Modifier.isProtected(methodModifiers) && !$Modifier.isPublic(methodModifiers)) return;
+            // Skip static method
+            if ($Modifier.isStatic(methodModifiers)) return;
+            // Skip synthetic or bridge method
+            if (m.isSynthetic() || m.isBridge()) return;
+
             if (!mapContainsKey.call(methodCache, methodName)) {
                 mapPut.call(methodCache, methodName, new $HashMap());
             }
             mapGet.call(methodCache, methodName).putIfAbsent($Type.getMethodDescriptor(m), m);
         });
-        clazz.getInterfaces().forEach(i => getAllMethodOverloads(i, implemented, methodCache, metClasses));
+        clazz.getInterfaces().forEach(i => getAllMethodOverloads(i, methodCache, metClasses));
         clazz = clazz.getSuperclass();
     }
 };
@@ -432,6 +439,63 @@ let loadArg = (mv, varSlot, type) => {
     }
 };
 
+let returnResult = (mv, type, alreadyPoppedResultIfVoid) => {
+    if (type.isPrimitive()) {
+        switch (type.getName()) {
+            case "void":
+                if (!alreadyPoppedResultIfVoid) mv.visitInsn($Opcodes.POP);
+                mv.visitInsn($Opcodes.RETURN);
+                break;
+            case "int": case "char": case "short": case "byte": case "boolean":
+                mv.visitInsn($Opcodes.IRETURN);
+                break;
+            case "float":
+                mv.visitInsn($Opcodes.FRETURN);
+                break;
+            case "double":
+                mv.visitInsn($Opcodes.DRETURN);
+                break;
+            case "long":
+                mv.visitInsn($Opcodes.LRETURN);
+                break;
+        }
+    } else {
+        mv.visitInsn($Opcodes.ARETURN);
+    }
+}
+
+/**
+ * @param {string} superClassName 
+ * @param {string} className 
+ * @param {string} methodName 
+ * @param {string} methodDescriptor 
+ * @param {Internal.Method} method 
+ */
+let generateSuper = (cw, superClassName, className, methodName, methodDescriptor, method) => {
+    // Skip abstract method
+    let methodModifiers = method.getModifiers();
+    if ($Modifier.isAbstract(methodModifiers)) return;
+
+    let parameterCount = method.getParameterCount();
+
+    let mv = cw.visitMethod($Opcodes.ACC_PUBLIC, "super$" + methodName, methodDescriptor, null, null);
+    mv.visitCode();
+    mv.visitVarInsn($Opcodes.ALOAD, 0);
+
+    let currentVarSlot = 1;
+    for (let i = 0; i < parameterCount; i++) {
+        let paramType = method.getParameterTypes()[i];
+        loadArg(mv, currentVarSlot, paramType);
+        currentVarSlot += (paramType.getName() === "long" || paramType.getName() === "double") ? 2 : 1;
+    }
+    mv.visitMethodInsn($Opcodes.INVOKESPECIAL, superClassName, methodName, methodDescriptor, false);
+    let returnType = method.getReturnType();
+    returnResult(mv, returnType, true); // Though we didn't pop the result
+                                        // But a void method didn't produce a result neither
+    mv.visitMaxs(0, 0);
+    mv.visitEnd();
+};
+
 AdapterBuilder.prototype.asClass = function() {
     let className = "Adapter_" + AdapterIdCounter.getAndIncrement();
     let cw = new $ClassWriter($ClassWriter.COMPUTE_FRAMES | $ClassWriter.COMPUTE_MAXS);
@@ -441,13 +505,12 @@ AdapterBuilder.prototype.asClass = function() {
     this.methodMap.forEach((java, js) => {
         implementationMap[$NativeJavaMethod$getFunctionName.invoke(java)] = js;
     });
-    let implemented = $Set.copyOf(Object.keys(implementationMap));
 
     /** @type {Internal.Map<string, Internal.Map<string, Internal.Method>} */
     let methodCache = new $HashMap();
     let metClasses = new $HashSet();
-    getAllMethodOverloads(this.superClass.__javaObject__, implemented, methodCache, metClasses);
-    this.superInterfaces.forEach(i => getAllMethodOverloads(i.__javaObject__, implemented, methodCache, metClasses));
+    getAllMethodOverloads(this.superClass.__javaObject__, methodCache, metClasses);
+    this.superInterfaces.forEach(i => getAllMethodOverloads(i.__javaObject__, methodCache, metClasses));
 
     // public static synthetic NativeObject $IMPLEMENTATIONS;
     // public static synthetic Context $CONTEXT;
@@ -487,9 +550,12 @@ AdapterBuilder.prototype.asClass = function() {
         mv.visitEnd();
     });
 
-    mapForEach.call(methodCache, (methodName, descriptorToMethodMap) => {
-        mapForEach.call(descriptorToMethodMap, (descriptor, method) => {
-            generateMethod(cw, className, methodName, descriptor, method);
+    mapForEach.call(methodCache, (/** @type {string} */ methodName, /** @type {Internal.Map<string, Internal.Method>} */ descriptorToMethodMap) => {
+        mapForEach.call(descriptorToMethodMap, (/** @type {string} */ descriptor, /** @type {Internal.Method} */ method) => {
+            if (methodName in implementationMap) {
+                generateMethod(cw, className, methodName, descriptor, method);
+            }
+            generateSuper(cw, getInternalName(this.superClass), className, methodName, descriptor, method);
         });
     });
 
