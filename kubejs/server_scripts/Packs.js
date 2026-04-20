@@ -60,7 +60,7 @@ ModGen.createModInfo("enumjs", PelemenguinPacks.EnumJS)
 PelemenguinPacks.LavaAdapter = PackGen.createMetaData("lava_adapter")
     .withAuthors(["Pelemenguin"])
     .withName("LavaAdapter")
-    .withVersion("1.0")
+    .withVersion("1.1")
     .addDependency(KubeJSDependency)
     .withDescription("A KubeJS library for extending Java classes or implementing Java interfaces.")
     .build();
