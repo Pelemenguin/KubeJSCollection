@@ -81,6 +81,27 @@ declare namespace MultiThreadic {
     function stopThenNewThread(identifier: string, task: () => void, waitTimeInMillis: number = 1000): Alias.Thread;
     function sleep(millis: number): void;
 
+    namespace Executors {
+        function fixedThreadPool(identifier: string, nThreads: number, threadFactory?: Types.ThreadFactoryOrLambda): ExecutorServiceWrapper;
+        function cachedThreadPool(identifier: string, threadFactory?: Types.ThreadFactoryOrLambda): ExecutorServiceWrapper;
+        function scheduledThreadPool(identifier: string, nThreads: number, threadFactory?: Types.ThreadFactoryOrLambda): ScheduledExecutorServiceWrapper;
+        function singleThreadExecutor(identifier: string, threadFactory?: Types.ThreadFactoryOrLambda): ExecutorServiceWrapper;
+        function singleThreadScheduledExecutor(identifier: string, threadFactory?: Types.ThreadFactoryOrLambda): ScheduledExecutorServiceWrapper;
+        function workStealingPool(identifier: string, parallelism?: number): ExecutorServiceWrapper;
+        function listExecutors(): string[];
+        function getExecutor(identifier: string): ExecutorServiceWrapper;
+    }
+
+    namespace Atomic {
+        const Integer: Alias.$AtomicInteger;
+        const Long: Alias.$AtomicLong;
+        const Boolean: Alias.$AtomicBoolean;
+        const Reference: Alias.$AtomicReference;
+        const IntegerArray: Alias.$AtomicIntegerArray;
+        const LongArray: Alias.$AtomicLongArray;
+        const ReferenceArray: Alias.$AtomicReferenceArray;
+    }
+
     class ExecutorServiceWrapper implements Alias.ExecutorService {
         execute(task: Types.RunnableOrLambda): void;
         submit<T>(task: Types.CallableOrLambda<T>): Alias.Future<T>;
@@ -99,25 +120,6 @@ declare namespace MultiThreadic {
         schedule<V>(task: () => V, delay: number, unit: Alias.TimeUnit_): Alias.ScheduledFuture<V>;
         scheduleAtFixedRate(task: () => void, initialDelay: number, period: number, unit: Alias.TimeUnit_): Alias.ScheduledFuture<null>;
         scheduleWithFixedDelay(task: () => void, initialDelay: number, delay: number, unit: Alias.TimeUnit_): Alias.ScheduledFuture<null>;
-    }
-
-    namespace Executors {
-        function fixedThreadPool(identifier: string, nThreads: number, threadFactory?: Types.ThreadFactoryOrLambda): ExecutorServiceWrapper;
-        function cachedThreadPool(identifier: string, threadFactory?: Types.ThreadFactoryOrLambda): ExecutorServiceWrapper;
-        function scheduledThreadPool(identifier: string, nThreads: number, threadFactory?: Types.ThreadFactoryOrLambda): ScheduledExecutorServiceWrapper;
-        function singleThreadExecutor(identifier: string, threadFactory?: Types.ThreadFactoryOrLambda): ExecutorServiceWrapper;
-        function singleThreadScheduledExecutor(identifier: string, threadFactory?: Types.ThreadFactoryOrLambda): ScheduledExecutorServiceWrapper;
-        function workStealingPool(identifier: string, parallelism?: number): ExecutorServiceWrapper;
-    }
-
-    namespace Atomic {
-        const Integer: Alias.$AtomicInteger;
-        const Long: Alias.$AtomicLong;
-        const Boolean: Alias.$AtomicBoolean;
-        const Reference: Alias.$AtomicReference;
-        const IntegerArray: Alias.$AtomicIntegerArray;
-        const LongArray: Alias.$AtomicLongArray;
-        const ReferenceArray: Alias.$AtomicReferenceArray;
     }
 
     type theGlobal = {

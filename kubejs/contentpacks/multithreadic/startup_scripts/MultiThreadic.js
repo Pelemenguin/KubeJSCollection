@@ -222,7 +222,7 @@ const threads = getOrDefault(theGlobal, "threads", () => new $ConcurrentHashMap(
  */
 let threadFactory = (runnable, identifier) => {
     let thread;
-    if (typeof thread === "function") {
+    if (typeof runnable === "function") {
         let task = new TaskWrapper(runnable);
         thread = identifier ? new $Thread(task, CONFIG.THREAD_NAME_PREFIX + identifier) : new $Thread(task);
     } else {
@@ -380,7 +380,7 @@ Object.defineProperty(ExecutorServiceWrapper.prototype, "terminated", {
  * @param {MultiThreadic.Alias.ScheduledExecutorService} scheduler
  */
 const ScheduledExecutorServiceWrapper = function(scheduler) {
-    ExecutorServiceWrapper.call(this, scheduler);
+    this._delegate = scheduler;
 };
 
 ScheduledExecutorServiceWrapper.prototype = Object.create(ExecutorServiceWrapper.prototype);
@@ -487,6 +487,33 @@ const ExecutorsWrapper = {
         } else {
             return wrapNewExecutor(() => $Executors.newWorkStealingPool())(identifier);
         }
+    },
+
+    listExecutors() {
+        let active = [];
+        let it = executorServices.entrySet().iterator();
+        while (it.hasNext()) {
+            let entry = it.next();
+            let key = entry.getKey();
+            let wrapper = entry.getValue();
+            if (wrapper.isShutdown()) {
+                executorServices.remove(key, wrapper);
+            } else {
+                active.push(key);
+            }
+        }
+        return active;
+    },
+    getExecutor(identifier) {
+        let wrapper = executorServices.get(identifier);
+        if (wrapper != null) {
+            if (wrapper.isShutdown()) {
+                executorServices.remove(identifier, wrapper);
+                return null;
+            }
+            return wrapper;
+        }
+        return null;
     }
 };
 
