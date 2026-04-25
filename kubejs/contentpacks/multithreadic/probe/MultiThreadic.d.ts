@@ -27,6 +27,8 @@ declare namespace MultiThreadic {
         type ScheduledExecutorService     = Internal.ScheduledExecutorService;
         /** `java.util.concurrent.ScheduledFuture` */
         type ScheduledFuture<V>           = Internal.ScheduledFuture<V>;
+        /** `java.util.concurrent.ThreadFactory` */
+        type ThreadFactory                = Internal.ThreadFactory;
         /** `java.util.concurrent.TimeUnit` */
         type TimeUnit                     = Internal.TimeUnit;
         type TimeUnit_                    = Internal.TimeUnit_;
@@ -80,11 +82,11 @@ declare namespace MultiThreadic {
     function sleep(millis: number): void;
 
     class ExecutorServiceWrapper implements Alias.ExecutorService {
-        execute(task: () => void): void;
-        submit<T>(task: () => T): Alias.Future<T>;
-        submit<T>(task: () => void, result: T): Alias.Future<T>;
-        invokeAny<T>(tasks: Alias.Collection<() => T>, timeout?: number, timeUnit?: Alias.TimeUnit_): T;
-        invokeAll<T>(tasks: Alias.Collection<() => T>, timeout?: number, timeUnit?: Alias.TimeUnit_): Alias.List<Alias.Future<T>>;
+        execute(task: Types.RunnableOrLambda): void;
+        submit<T>(task: Types.CallableOrLambda<T>): Alias.Future<T>;
+        submit<T>(task: Types.RunnableOrLambda, result: T): Alias.Future<T>;
+        invokeAny<T>(tasks: Alias.Collection<Types.CallableOrLambda<T>>, timeout?: number, timeUnit?: Alias.TimeUnit_): T;
+        invokeAll<T>(tasks: Alias.Collection<Types.CallableOrLambda<T>>, timeout?: number, timeUnit?: Alias.TimeUnit_): Alias.List<Alias.Future<T>>;
         isShutdown(): boolean;
         isTerminated(): boolean;
         shutdown(): void;
@@ -100,11 +102,11 @@ declare namespace MultiThreadic {
     }
 
     namespace Executors {
-        function fixedThreadPool(identifier: string, nThreads: number): ExecutorServiceWrapper;
-        function cachedThreadPool(identifier: string): ExecutorServiceWrapper;
-        function scheduledThreadPool(identifier: string, nThreads: number): ScheduledExecutorServiceWrapper;
-        function singleThreadExecutor(identifier: string): ExecutorServiceWrapper;
-        function singleThreadScheduledExecutor(identifier: string): ScheduledExecutorServiceWrapper;
+        function fixedThreadPool(identifier: string, nThreads: number, threadFactory?: Types.ThreadFactoryOrLambda): ExecutorServiceWrapper;
+        function cachedThreadPool(identifier: string, threadFactory?: Types.ThreadFactoryOrLambda): ExecutorServiceWrapper;
+        function scheduledThreadPool(identifier: string, nThreads: number, threadFactory?: Types.ThreadFactoryOrLambda): ScheduledExecutorServiceWrapper;
+        function singleThreadExecutor(identifier: string, threadFactory?: Types.ThreadFactoryOrLambda): ExecutorServiceWrapper;
+        function singleThreadScheduledExecutor(identifier: string, threadFactory?: Types.ThreadFactoryOrLambda): ScheduledExecutorServiceWrapper;
         function workStealingPool(identifier: string, parallelism?: number): ExecutorServiceWrapper;
     }
 
@@ -123,5 +125,12 @@ declare namespace MultiThreadic {
         executorServices: Alias.ConcurrentHashMap<string, ExecutorServiceWrapper>;
         classLoader: Alias.DefiningClassLoader;
     };
+
+    namespace Types {
+        // Functional Interfaces
+        type CallableOrLambda<V> = Alias.Callable<V> | (() => V);
+        type RunnableOrLambda = Alias.Runnable | (() => void);
+        type ThreadFactoryOrLambda = Alias.ThreadFactory | ((runnable: Alias.Runnable) => Alias.Thread);
+    }
 
 }

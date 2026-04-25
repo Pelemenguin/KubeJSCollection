@@ -217,12 +217,17 @@ let TaskWrapper = (() => {
 const threads = getOrDefault(theGlobal, "threads", () => new $ConcurrentHashMap());
 
 /**
- * @param {() => void} runnable 
+ * @param {(() => void) | Internal.Runnable} runnable 
  * @param {string | null} identifier 
  */
 let threadFactory = (runnable, identifier) => {
-    let task = new TaskWrapper(runnable);
-    let thread = identifier ? new $Thread(task, CONFIG.THREAD_NAME_PREFIX + identifier) : new $Thread(task);
+    let thread;
+    if (typeof thread === "function") {
+        let task = new TaskWrapper(runnable);
+        thread = identifier ? new $Thread(task, CONFIG.THREAD_NAME_PREFIX + identifier) : new $Thread(task);
+    } else {
+        thread = identifier ? new $Thread(runnable, CONFIG.THREAD_NAME_PREFIX + identifier) : new $Thread(runnable);
+    }
     return thread;
 };
 
@@ -244,11 +249,11 @@ const ExecutorServiceWrapper = function(executor) {
 
 /** @type {MultiThreadic.ExecutorServiceWrapper["execute"]} */
 ExecutorServiceWrapper.prototype.execute = function(task) {
-    if (typeof task !== "function") {
-        throw new TypeError("Task must be a function, but got " + task);
+    if (typeof task === "function") {
+        this._delegate.execute(new TaskWrapper(task));
+    } else {
+        this._delegate.execute(task);
     }
-    let wrappedTask = new TaskWrapper(task);
-    this._delegate.execute(wrappedTask);
 };
 
 /** @type {MultiThreadic.ExecutorServiceWrapper["submit"]} */
@@ -256,22 +261,22 @@ ExecutorServiceWrapper.prototype.submit = function() {
     if (arguments.length === 1) {
         // submit as callable
         let task = arguments[0];
-        if (typeof task !== "function") {
-            throw new TypeError("Task must be a function, but got " + task);
+        if (typeof task === "function") {
+            // Specify overload to avoid ambiguity with submit(Runnable) as they both take 1 argument
+            return this._delegate["submit(java.util.concurrent.Callable)"](new TaskWrapper(task));
+        } else {
+            return this._delegate["submit(java.util.concurrent.Callable)"](task);
         }
-        let wrappedTask = new TaskWrapper(task);
-        // Specify overload to avoid ambiguity with submit(Runnable) as they both take 1 argument
-        return this._delegate["submit(java.util.concurrent.Callable)"](wrappedTask);
     } else if (arguments.length === 2) {
         // submit as runnable with result
         let task = arguments[0];
         let result = arguments[1];
-        if (typeof task !== "function") {
-            throw new TypeError("Task must be a function, but got " + task);
+        if (typeof task === "function") {
+            // No need to specify overload as submit(Runnable, Object) is the only submit method that takes 2 arguments
+            return this._delegate.submit(new TaskWrapper(task), result);
+        } else {
+            return this._delegate.submit(task, result);
         }
-        let wrappedTask = new TaskWrapper(task);
-        // No need to specify overload as submit(Runnable, Object) is the only submit method that takes 2 arguments
-        return this._delegate.submit(wrappedTask, result);
     } else {
         throw new TypeError("submit() takes either 1 or 2 arguments, but got " + arguments.length);
     }
@@ -284,10 +289,11 @@ ExecutorServiceWrapper.prototype.invokeAny = function() {
         let tasks = arguments[0];
         let wrappedTasks = new $ArrayList(tasks.size());
         for (let task of tasks) {
-            if (typeof task !== "function") {
-                throw new TypeError("Task must be a function, but got " + task);
+            if (typeof task === "function") {
+                wrappedTasks.add(new TaskWrapper(task));
+            } else {
+                wrappedTasks.add(task);
             }
-            wrappedTasks.add(new TaskWrapper(task));
         }
         return this._delegate.invokeAny(wrappedTasks);
     } else if (arguments.length === 3) {
@@ -295,10 +301,11 @@ ExecutorServiceWrapper.prototype.invokeAny = function() {
         let tasks = arguments[0];
         let wrappedTasks = new $ArrayList(tasks.size());
         for (let task of tasks) {
-            if (typeof task !== "function") {
-                throw new TypeError("Task must be a function, but got " + task);
+            if (typeof task === "function") {
+                wrappedTasks.add(new TaskWrapper(task));
+            } else {
+                wrappedTasks.add(task);
             }
-            wrappedTasks.add(new TaskWrapper(task));
         }
         return this._delegate.invokeAny(wrappedTasks, arguments[1], arguments[2]);
     } else {
@@ -313,10 +320,11 @@ ExecutorServiceWrapper.prototype.invokeAll = function() {
         let tasks = arguments[0];
         let wrappedTasks = new $ArrayList(tasks.size());
         for (let task of tasks) {
-            if (typeof task !== "function") {
-                throw new TypeError("Task must be a function, but got " + task);
+            if (typeof task === "function") {
+                wrappedTasks.add(new TaskWrapper(task));
+            } else {
+                wrappedTasks.add(task);
             }
-            wrappedTasks.add(new TaskWrapper(task));
         }
         return this._delegate.invokeAll(wrappedTasks);
     } else if (arguments.length === 3) {
@@ -324,10 +332,11 @@ ExecutorServiceWrapper.prototype.invokeAll = function() {
         let tasks = arguments[0];
         let wrappedTasks = new $ArrayList(tasks.size());
         for (let task of tasks) {
-            if (typeof task !== "function") {
-                throw new TypeError("Task must be a function, but got " + task);
+            if (typeof task === "function") {
+                wrappedTasks.add(new TaskWrapper(task));
+            } else {
+                wrappedTasks.add(task);
             }
-            wrappedTasks.add(new TaskWrapper(task));
         }
         return this._delegate.invokeAll(wrappedTasks, arguments[1], arguments[2]);
     } else {
@@ -379,23 +388,29 @@ ScheduledExecutorServiceWrapper.prototype.constructor = ScheduledExecutorService
 
 /** @type {MultiThreadic.ScheduledExecutorServiceWrapper["schedule"]} */
 ScheduledExecutorServiceWrapper.prototype.schedule = function(task, delay, unit) {
-    if (typeof task !== "function") throw new TypeError("Task must be a function, but got " + task);
-    let wrappedTask = new TaskWrapper(task);
-    return this._delegate.schedule(wrappedTask, delay, unit);
+    if (typeof task === "function") {
+        return this._delegate.schedule(new TaskWrapper(task), delay, unit);
+    } else {
+        return this._delegate.schedule(task, delay, unit);
+    }
 };
 
 /** @type {MultiThreadic.ScheduledExecutorServiceWrapper["scheduleAtFixedRate"]} */
 ScheduledExecutorServiceWrapper.prototype.scheduleAtFixedRate = function(task, initialDelay, period, unit) {
-    if (typeof task !== "function") throw new TypeError("Task must be a function, but got " + task);
-    let wrappedTask = new TaskWrapper(task);
-    return this._delegate.scheduleAtFixedRate(wrappedTask, initialDelay, period, unit);
+    if (typeof task === "function") {
+        return this._delegate.scheduleAtFixedRate(new TaskWrapper(task), initialDelay, period, unit);
+    } else {
+        return this._delegate.scheduleAtFixedRate(task, initialDelay, period, unit);
+    }
 };
 
 /** @type {MultiThreadic.ScheduledExecutorServiceWrapper["scheduleWithFixedDelay"]} */
 ScheduledExecutorServiceWrapper.prototype.scheduleWithFixedDelay = function(task, initialDelay, delay, unit) {
-    if (typeof task !== "function") throw new TypeError("Task must be a function, but got " + task);
-    let wrappedTask = new TaskWrapper(task);
-    return this._delegate.scheduleWithFixedDelay(wrappedTask, initialDelay, delay, unit);
+    if (typeof task === "function") {
+        return this._delegate.scheduleWithFixedDelay(new TaskWrapper(task), initialDelay, delay, unit);
+    } else {
+        return this._delegate.scheduleWithFixedDelay(task, initialDelay, delay, unit);
+    }
 };
 
 /**
@@ -436,20 +451,35 @@ let wrapNewScheduledExecutor = (creator) => (identifier) => {
 
 /** @type {typeof MultiThreadic.Executors} */
 const ExecutorsWrapper = {
-    fixedThreadPool(identifier, nThreads) {
-        return wrapNewExecutor(() => $Executors.newFixedThreadPool(nThreads))(identifier);
+    fixedThreadPool(identifier, nThreads, threadFactory) {
+        return wrapNewExecutor(() => threadFactory === undefined
+            ? $Executors.newFixedThreadPool(nThreads)
+            : $Executors.newFixedThreadPool(nThreads, threadFactory)
+        )(identifier);
     },
-    cachedThreadPool(identifier) {
-        return wrapNewExecutor(() => $Executors.newCachedThreadPool())(identifier);
+    cachedThreadPool(identifier, threadFactory) {
+        return wrapNewExecutor(() => threadFactory === undefined
+            ? $Executors.newCachedThreadPool()
+            : $Executors.newCachedThreadPool(threadFactory)
+        )(identifier);
     },
-    scheduledThreadPool(identifier, nThreads) {
-        return wrapNewScheduledExecutor(() => $Executors.newScheduledThreadPool(nThreads))(identifier);
+    scheduledThreadPool(identifier, nThreads, threadFactory) {
+        return wrapNewScheduledExecutor(() => threadFactory === undefined
+            ? $Executors.newScheduledThreadPool(nThreads)
+            : $Executors.newScheduledThreadPool(nThreads, threadFactory)
+        )(identifier);
     },
-    singleThreadExecutor(identifier) {
-        return wrapNewExecutor(() => $Executors.newSingleThreadExecutor())(identifier);
+    singleThreadExecutor(identifier, threadFactory) {
+        return wrapNewExecutor(() => threadFactory === undefined
+            ? $Executors.newSingleThreadExecutor()
+            : $Executors.newSingleThreadExecutor(threadFactory)
+        )(identifier);
     },
-    singleThreadScheduledExecutor(identifier) {
-        return wrapNewScheduledExecutor(() => $Executors.newSingleThreadScheduledExecutor())(identifier);
+    singleThreadScheduledExecutor(identifier, threadFactory) {
+        return wrapNewScheduledExecutor(() => threadFactory === undefined
+            ? $Executors.newSingleThreadScheduledExecutor()
+            : $Executors.newSingleThreadScheduledExecutor(threadFactory)
+        )(identifier);
     },
     workStealingPool(identifier, parallelism) {
         if (parallelism !== undefined) {
@@ -461,6 +491,10 @@ const ExecutorsWrapper = {
 };
 
 Object.freeze(ExecutorsWrapper);
+Object.freeze(ExecutorServiceWrapper);
+Object.freeze(ExecutorServiceWrapper.prototype);
+Object.freeze(ScheduledExecutorServiceWrapper);
+Object.freeze(ScheduledExecutorServiceWrapper.prototype);
 
 //#endregion
 
@@ -477,9 +511,6 @@ let exported = {
     newThread(identifier, task) {
         if (typeof identifier !== "string") {
             throw new TypeError("Identifier must be a string, but got " + $String.valueOf(identifier));
-        }
-        if (typeof task !== "function") {
-            throw new TypeError("Task must be a function, but got " + $String.valueOf(task));
         }
 
         let resultThread = null;
@@ -525,6 +556,7 @@ let exported = {
     },
     TaskWrapper: TaskWrapper,
     ExecutorServiceWrapper: ExecutorServiceWrapper,
+    ScheduledExecutorServiceWrapper: ScheduledExecutorServiceWrapper,
     CONFIG: CONFIG,
     Executors: ExecutorsWrapper,
     Atomic: {
@@ -537,6 +569,8 @@ let exported = {
         ReferenceArray: Java.loadClass("java.util.concurrent.atomic.AtomicReferenceArray")
     }
 };
+
+Object.freeze(exported.Atomic);
 
 return Object.freeze(exported);
 
