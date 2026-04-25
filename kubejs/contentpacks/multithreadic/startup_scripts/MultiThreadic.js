@@ -82,7 +82,7 @@ let getOrDefault = (obj, prop, defaultProvider) => {
 //#region - Java classes
 
 const $Arrays            = Java.loadClass("java.util.Arrays");
-const $HashMap           = Java.loadClass("java.util.HashMap");
+const $ArrayList         = Java.loadClass("java.util.ArrayList");
 const $Object            = Java.loadClass("java.lang.Object");
 /** @type {typeof Internal.Thread} */
 const $Thread            =    loadSpecial("java.lang.Thread");
@@ -216,14 +216,9 @@ let TaskWrapper = (() => {
 
 const threads = getOrDefault(theGlobal, "threads", () => new $ConcurrentHashMap());
 
-/** @type {Internal.Class<dev.latvian.mods.rhino.Function>} */
-let functionClass = $Function.__javaObject__;
-// call(arg0: Internal.Context_, arg1: Internal.Scriptable_, arg2: Internal.Scriptable_, arg3: any[]): any;
-let functionCallMethod = functionClass.getMethod("call", $Context, $Scriptable, $Scriptable, $Object.__javaObject__.arrayType());
-
 /**
  * @param {() => void} runnable 
- * @param {string | null} identifier
+ * @param {string | null} identifier 
  */
 let threadFactory = (runnable, identifier) => {
     let task = new TaskWrapper(runnable);
@@ -240,26 +235,234 @@ let emptyArr = $Arrays["copyOf(java.lang.Object[],int)"]([], 0);
 
 const executorServices = getOrDefault(theGlobal, "executorServices", () => new $ConcurrentHashMap());
 
+/**
+ * @param {MultiThreadic.Alias.ExecutorService} executor 
+ */
+const ExecutorServiceWrapper = function(executor) {
+    this._delegate = executor;
+};
+
+/** @type {MultiThreadic.ExecutorServiceWrapper["execute"]} */
+ExecutorServiceWrapper.prototype.execute = function(task) {
+    if (typeof task !== "function") {
+        throw new TypeError("Task must be a function, but got " + task);
+    }
+    let wrappedTask = new TaskWrapper(task);
+    this._delegate.execute(wrappedTask);
+};
+
+/** @type {MultiThreadic.ExecutorServiceWrapper["submit"]} */
+ExecutorServiceWrapper.prototype.submit = function() {
+    if (arguments.length === 1) {
+        // submit as callable
+        let task = arguments[0];
+        if (typeof task !== "function") {
+            throw new TypeError("Task must be a function, but got " + task);
+        }
+        let wrappedTask = new TaskWrapper(task);
+        // Specify overload to avoid ambiguity with submit(Runnable) as they both take 1 argument
+        return this._delegate["submit(java.util.concurrent.Callable)"](wrappedTask);
+    } else if (arguments.length === 2) {
+        // submit as runnable with result
+        let task = arguments[0];
+        let result = arguments[1];
+        if (typeof task !== "function") {
+            throw new TypeError("Task must be a function, but got " + task);
+        }
+        let wrappedTask = new TaskWrapper(task);
+        // No need to specify overload as submit(Runnable, Object) is the only submit method that takes 2 arguments
+        return this._delegate.submit(wrappedTask, result);
+    } else {
+        throw new TypeError("submit() takes either 1 or 2 arguments, but got " + arguments.length);
+    }
+};
+
+/** @type {MultiThreadic.ExecutorServiceWrapper["invokeAny"]} */
+ExecutorServiceWrapper.prototype.invokeAny = function() {
+    if (arguments.length === 1) {
+        /** @type {Internal.Collection<() => T>} */
+        let tasks = arguments[0];
+        let wrappedTasks = new $ArrayList(tasks.size());
+        for (let task of tasks) {
+            if (typeof task !== "function") {
+                throw new TypeError("Task must be a function, but got " + task);
+            }
+            wrappedTasks.add(new TaskWrapper(task));
+        }
+        return this._delegate.invokeAny(wrappedTasks);
+    } else if (arguments.length === 3) {
+        /** @type {Internal.Collection<() => T>} */
+        let tasks = arguments[0];
+        let wrappedTasks = new $ArrayList(tasks.size());
+        for (let task of tasks) {
+            if (typeof task !== "function") {
+                throw new TypeError("Task must be a function, but got " + task);
+            }
+            wrappedTasks.add(new TaskWrapper(task));
+        }
+        return this._delegate.invokeAny(wrappedTasks, arguments[1], arguments[2]);
+    } else {
+        throw new TypeError("invokeAny() takes either 1 or 3 arguments, but got " + arguments.length);
+    }
+};
+
+/** @type {MultiThreadic.ExecutorServiceWrapper["invokeAll"]} */
+ExecutorServiceWrapper.prototype.invokeAll = function() {
+    if (arguments.length === 1) {
+        /** @type {Internal.Collection<() => T>} */
+        let tasks = arguments[0];
+        let wrappedTasks = new $ArrayList(tasks.size());
+        for (let task of tasks) {
+            if (typeof task !== "function") {
+                throw new TypeError("Task must be a function, but got " + task);
+            }
+            wrappedTasks.add(new TaskWrapper(task));
+        }
+        return this._delegate.invokeAll(wrappedTasks);
+    } else if (arguments.length === 3) {
+        /** @type {Internal.Collection<() => T>} */
+        let tasks = arguments[0];
+        let wrappedTasks = new $ArrayList(tasks.size());
+        for (let task of tasks) {
+            if (typeof task !== "function") {
+                throw new TypeError("Task must be a function, but got " + task);
+            }
+            wrappedTasks.add(new TaskWrapper(task));
+        }
+        return this._delegate.invokeAll(wrappedTasks, arguments[1], arguments[2]);
+    } else {
+        throw new TypeError("invokeAll() takes either 1 or 3 arguments, but got " + arguments.length);
+    }
+};
+
+/** @type {MultiThreadic.ExecutorServiceWrapper["isShutdown"]} */
+ExecutorServiceWrapper.prototype.isShutdown = function() {
+    return this._delegate.isShutdown();
+};
+
+/** @type {MultiThreadic.ExecutorServiceWrapper["isTerminated"]} */
+ExecutorServiceWrapper.prototype.isTerminated = function() {
+    return this._delegate.isTerminated();
+};
+
+/** @type {MultiThreadic.ExecutorServiceWrapper["shutdown"]} */
+ExecutorServiceWrapper.prototype.shutdown = function() {
+    this._delegate.shutdown();
+};
+
+/** @type {MultiThreadic.ExecutorServiceWrapper["shutdownNow"]} */
+ExecutorServiceWrapper.prototype.shutdownNow = function() {
+    return this._delegate.shutdownNow();
+};
+
+/** @type {MultiThreadic.ExecutorServiceWrapper["awaitTermination"]} */
+ExecutorServiceWrapper.prototype.awaitTermination = function(timeout, unit) {
+    return this._delegate.awaitTermination(timeout, unit);
+};
+
+Object.defineProperty(ExecutorServiceWrapper.prototype, "terminated", {
+    get() {
+        return this._delegate.isTerminated();
+    }
+});
+
+/**
+ * @extends {ExecutorWrapper}
+ * @param {MultiThreadic.Alias.ScheduledExecutorService} scheduler
+ */
+const ScheduledExecutorServiceWrapper = function(scheduler) {
+    ExecutorServiceWrapper.call(this, scheduler);
+};
+
+ScheduledExecutorServiceWrapper.prototype = Object.create(ExecutorServiceWrapper.prototype);
+ScheduledExecutorServiceWrapper.prototype.constructor = ScheduledExecutorServiceWrapper;
+
+/** @type {MultiThreadic.ScheduledExecutorServiceWrapper["schedule"]} */
+ScheduledExecutorServiceWrapper.prototype.schedule = function(task, delay, unit) {
+    if (typeof task !== "function") throw new TypeError("Task must be a function, but got " + task);
+    let wrappedTask = new TaskWrapper(task);
+    return this._delegate.schedule(wrappedTask, delay, unit);
+};
+
+/** @type {MultiThreadic.ScheduledExecutorServiceWrapper["scheduleAtFixedRate"]} */
+ScheduledExecutorServiceWrapper.prototype.scheduleAtFixedRate = function(task, initialDelay, period, unit) {
+    if (typeof task !== "function") throw new TypeError("Task must be a function, but got " + task);
+    let wrappedTask = new TaskWrapper(task);
+    return this._delegate.scheduleAtFixedRate(wrappedTask, initialDelay, period, unit);
+};
+
+/** @type {MultiThreadic.ScheduledExecutorServiceWrapper["scheduleWithFixedDelay"]} */
+ScheduledExecutorServiceWrapper.prototype.scheduleWithFixedDelay = function(task, initialDelay, delay, unit) {
+    if (typeof task !== "function") throw new TypeError("Task must be a function, but got " + task);
+    let wrappedTask = new TaskWrapper(task);
+    return this._delegate.scheduleWithFixedDelay(wrappedTask, initialDelay, delay, unit);
+};
+
+/**
+ * @param {() => Internal.ExecutorService} creator 
+ * @returns {ExecutorServiceWrapper}
+ */
+let wrapNewExecutor = (creator) => (identifier) => {
+    let result;
+    executorServices.compute(identifier, (_key, original) => {
+        if (original == null || original.isShutdown()) {
+            let created = creator();
+            result = new ExecutorServiceWrapper(created);
+        } else {
+            result = original;
+        }
+        return result;
+    });
+    return result;
+};
+
+/**
+ * @param {() => Internal.ScheduledExecutorService} creator 
+ * @returns {ScheduledExecutorServiceWrapper}
+ */
+let wrapNewScheduledExecutor = (creator) => (identifier) => {
+    let result;
+    executorServices.compute(identifier, (_key, original) => {
+        if (original == null || original.isShutdown()) {
+            let created = creator();
+            result = new ScheduledExecutorServiceWrapper(created);
+        } else {
+            result = original;
+        }
+        return result;
+    });
+    return result;
+};
+
 /** @type {typeof MultiThreadic.Executors} */
 const ExecutorsWrapper = {
-    newScheduledThreadPool(identifier, threadCount) {
-        let result;
-        executorServices.compute(identifier, (_key, original) => {
-            if (original != null) {
-                result = null;
-                return original;
-            } else {
-                let created = $Executors.newScheduledThreadPool(threadCount);
-                result = created;
-                return created;
-            }
-        });
-        // TODO: Wrap executor
-        return result;
+    fixedThreadPool(identifier, nThreads) {
+        return wrapNewExecutor(() => $Executors.newFixedThreadPool(nThreads))(identifier);
+    },
+    cachedThreadPool(identifier) {
+        return wrapNewExecutor(() => $Executors.newCachedThreadPool())(identifier);
+    },
+    scheduledThreadPool(identifier, nThreads) {
+        return wrapNewScheduledExecutor(() => $Executors.newScheduledThreadPool(nThreads))(identifier);
+    },
+    singleThreadExecutor(identifier) {
+        return wrapNewExecutor(() => $Executors.newSingleThreadExecutor())(identifier);
+    },
+    singleThreadScheduledExecutor(identifier) {
+        return wrapNewScheduledExecutor(() => $Executors.newSingleThreadScheduledExecutor())(identifier);
+    },
+    workStealingPool(identifier, parallelism) {
+        if (parallelism !== undefined) {
+            return wrapNewExecutor(() => $Executors.newWorkStealingPool(parallelism))(identifier);
+        } else {
+            return wrapNewExecutor(() => $Executors.newWorkStealingPool())(identifier);
+        }
     }
 };
 
 Object.freeze(ExecutorsWrapper);
+
+//#endregion
 
 //#region - Export
 
@@ -321,6 +524,7 @@ let exported = {
         $Thread.sleep(millis);
     },
     TaskWrapper: TaskWrapper,
+    ExecutorServiceWrapper: ExecutorServiceWrapper,
     CONFIG: CONFIG,
     Executors: ExecutorsWrapper,
     Atomic: {

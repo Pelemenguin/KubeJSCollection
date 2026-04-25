@@ -8,6 +8,11 @@ declare namespace MultiThreadic {
         type Runnable                     = Internal.Runnable;
         /** `java.lang.Thread` */
         type Thread                       = Internal.Thread;
+        /** `java.util.Collection` */
+        type Collection<E>                = Internal.Collection<E>;
+        type Collection_<E>               = Internal.Collection_<E>;
+        /** `java.util.List` */
+        type List<E>                      = Internal.List<E>;
         /** `java.util.Map` */
         type Map<K, V>                    = Internal.Map<K, V>;
         /** `java.util.concurrent.Callable` */
@@ -16,8 +21,15 @@ declare namespace MultiThreadic {
         type ConcurrentHashMap<K, V>      = Internal.ConcurrentHashMap<K, V>;
         /** `java.util.concurrent.ExecutorService` */
         type ExecutorService              = Internal.ExecutorService;
+        /** `java.util.concurrent.Future` */
+        type Future<V>                    = Internal.Future<V>;
         /** `java.util.concurrent.ScheduledExecutorService` */
         type ScheduledExecutorService     = Internal.ScheduledExecutorService;
+        /** `java.util.concurrent.ScheduledFuture` */
+        type ScheduledFuture<V>           = Internal.ScheduledFuture<V>;
+        /** `java.util.concurrent.TimeUnit` */
+        type TimeUnit                     = Internal.TimeUnit;
+        type TimeUnit_                    = Internal.TimeUnit_;
         /** `java.util.concurrent.atomic.AtomicInteger` */
         type  AtomicInteger               = Internal.AtomicInteger;
         type $AtomicInteger        = typeof Internal.AtomicInteger;
@@ -67,6 +79,35 @@ declare namespace MultiThreadic {
     function stopThenNewThread(identifier: string, task: () => void, waitTimeInMillis: number = 1000): Alias.Thread;
     function sleep(millis: number): void;
 
+    class ExecutorServiceWrapper implements Alias.ExecutorService {
+        execute(task: () => void): void;
+        submit<T>(task: () => T): Alias.Future<T>;
+        submit<T>(task: () => void, result: T): Alias.Future<T>;
+        invokeAny<T>(tasks: Alias.Collection<() => T>, timeout?: number, timeUnit?: Alias.TimeUnit_): T;
+        invokeAll<T>(tasks: Alias.Collection<() => T>, timeout?: number, timeUnit?: Alias.TimeUnit_): Alias.List<Alias.Future<T>>;
+        isShutdown(): boolean;
+        isTerminated(): boolean;
+        shutdown(): void;
+        shutdownNow(): Alias.List<Alias.Runnable>;
+        awaitTermination(timeout: number, unit: Alias.TimeUnit_): boolean;
+        get terminated(): boolean;
+    }
+
+    class ScheduledExecutorServiceWrapper extends ExecutorServiceWrapper implements Alias.ScheduledExecutorService {
+        schedule<V>(task: () => V, delay: number, unit: Alias.TimeUnit_): Alias.ScheduledFuture<V>;
+        scheduleAtFixedRate(task: () => void, initialDelay: number, period: number, unit: Alias.TimeUnit_): Alias.ScheduledFuture<null>;
+        scheduleWithFixedDelay(task: () => void, initialDelay: number, delay: number, unit: Alias.TimeUnit_): Alias.ScheduledFuture<null>;
+    }
+
+    namespace Executors {
+        function fixedThreadPool(identifier: string, nThreads: number): ExecutorServiceWrapper;
+        function cachedThreadPool(identifier: string): ExecutorServiceWrapper;
+        function scheduledThreadPool(identifier: string, nThreads: number): ScheduledExecutorServiceWrapper;
+        function singleThreadExecutor(identifier: string): ExecutorServiceWrapper;
+        function singleThreadScheduledExecutor(identifier: string): ScheduledExecutorServiceWrapper;
+        function workStealingPool(identifier: string, parallelism?: number): ExecutorServiceWrapper;
+    }
+
     namespace Atomic {
         const Integer: Alias.$AtomicInteger;
         const Long: Alias.$AtomicLong;
@@ -79,12 +120,8 @@ declare namespace MultiThreadic {
 
     type theGlobal = {
         threads: Alias.ConcurrentHashMap<string, Alias.Thread>;
-        executorServices: Alias.ConcurrentHashMap<string, Alias.ExecutorService>;
+        executorServices: Alias.ConcurrentHashMap<string, ExecutorServiceWrapper>;
         classLoader: Alias.DefiningClassLoader;
-    }
-
-    namespace Executors {
-        function newScheduledThreadPool(threadCount: number): Alias.ScheduledExecutorService;
-    }
+    };
 
 }
