@@ -28,7 +28,7 @@ declare namespace MultiThreadic {
         type  AtomicBoolean               = Internal.AtomicBoolean;
         type $AtomicBoolean        = typeof Internal.AtomicBoolean;
         /** `java.util.concurrent.atomic.AtomicReference` */
-        type  AtomicReference             = Internal.AtomicReference;
+        type  AtomicReference<V>          = Internal.AtomicReference<V>;
         type $AtomicReference      = typeof Internal.AtomicReference;
         /** `java.util.concurrent.atomic.AtomicIntegerArray` */
         type  AtomicIntegerArray          = Internal.AtomicIntegerArray;
@@ -37,7 +37,7 @@ declare namespace MultiThreadic {
         type  AtomicLongArray             = Internal.AtomicLongArray;
         type $AtomicLongArray      = typeof Internal.AtomicLongArray;
         /** `java.util.concurrent.atomic.AtomicReferenceArray` */
-        type  AtomicReferenceArray        = Internal.AtomicReferenceArray;
+        type  AtomicReferenceArray<E>     = Internal.AtomicReferenceArray<E>;
         type $AtomicReferenceArray = typeof Internal.AtomicReferenceArray;
 
         /** `dev.latvian.mods.rhino.Context` */
@@ -58,6 +58,7 @@ declare namespace MultiThreadic {
         call(): T;
     }
 
+    function isInterrupted(): boolean;
     function currentThread(): Alias.Thread;
     function newThread(identifier: string, task: () => void): Alias.Thread;
     function listThreads(): string[];

@@ -108,14 +108,14 @@ const MultiThreadicClassLoader = getOrDefault(theGlobal, "classLoader", () => ne
  */
 let TaskWrapper = (() => {
 
+    const CLASS_WRAPPER_CLASS_NAME = "TaskWrapper";
+
     // If TaskWrapper is already defined in the MultiThreadicClassLoader
     // Return found class instead of creating a new one
     try {
         let clazz = MultiThreadicClassLoader.loadClass(CLASS_WRAPPER_CLASS_NAME);
         return new $NativeJavaClass(currentContext, $ScriptableObject.getTopLevelScope({}), clazz);
     } catch (e) {}
-
-    const CLASS_WRAPPER_CLASS_NAME = "TaskWrapper";
 
     // public class ClassWrapper implements Runnable, Callable<Object>
     let cw = new $ClassWriter(0);
@@ -265,6 +265,9 @@ Object.freeze(ExecutorsWrapper);
 
 /** @type {typeof MultiThreadic} */
 let exported = {
+    isInterrupted() {
+        return exported.currentThread().isInterrupted();
+    },
     currentThread() {
         return $Thread.currentThread();
     },
