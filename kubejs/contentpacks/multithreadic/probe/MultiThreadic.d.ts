@@ -4,27 +4,47 @@ declare namespace MultiThreadic {
 
     namespace Alias {
 
+        /** `java.lang.Runnable` */
+        type Runnable                     = Internal.Runnable;
         /** `java.lang.Thread` */
-        type Thread                   = Internal.Thread;
+        type Thread                       = Internal.Thread;
         /** `java.util.Map` */
-        type Map<K, V>                = Internal.Map<K, V>;
+        type Map<K, V>                    = Internal.Map<K, V>;
+        /** `java.util.concurrent.Callable` */
+        type Callable<V>                  = Internal.Callable<V>;
         /** `java.util.concurrent.ConcurrentHashMap` */
-        type ConcurrentHashMap<K, V>  = Internal.ConcurrentHashMap<K, V>;
+        type ConcurrentHashMap<K, V>      = Internal.ConcurrentHashMap<K, V>;
         /** `java.util.concurrent.ExecutorService` */
-        type ExecutorService          = Internal.ExecutorService;
+        type ExecutorService              = Internal.ExecutorService;
         /** `java.util.concurrent.ScheduledExecutorService` */
-        type ScheduledExecutorService = Internal.ScheduledExecutorService;
+        type ScheduledExecutorService     = Internal.ScheduledExecutorService;
+        /** `java.util.concurrent.atomic.AtomicInteger` */
+        type  AtomicInteger               = Internal.AtomicInteger;
+        type $AtomicInteger        = typeof Internal.AtomicInteger;
+        /** `java.util.concurrent.atomic.AtomicLong` */
+        type  AtomicLong                  = Internal.AtomicLong;
+        type $AtomicLong           = typeof Internal.AtomicLong;
+        /** `java.util.concurrent.atomic.AtomicBoolean` */
+        type  AtomicBoolean               = Internal.AtomicBoolean;
+        type $AtomicBoolean        = typeof Internal.AtomicBoolean;
+        /** `java.util.concurrent.atomic.AtomicReference` */
+        type  AtomicReference             = Internal.AtomicReference;
+        type $AtomicReference      = typeof Internal.AtomicReference;
+        /** `java.util.concurrent.atomic.AtomicIntegerArray` */
+        type  AtomicIntegerArray          = Internal.AtomicIntegerArray;
+        type $AtomicIntegerArray   = typeof Internal.AtomicIntegerArray;
+        /** `java.util.concurrent.atomic.AtomicLongArray` */
+        type  AtomicLongArray             = Internal.AtomicLongArray;
+        type $AtomicLongArray      = typeof Internal.AtomicLongArray;
+        /** `java.util.concurrent.atomic.AtomicReferenceArray` */
+        type  AtomicReferenceArray        = Internal.AtomicReferenceArray;
+        type $AtomicReferenceArray = typeof Internal.AtomicReferenceArray;
 
         /** `dev.latvian.mods.rhino.Context` */
-        type Context = Internal.Context;
+        type Context             = Internal.Context;
+        /** `dev.latvian.mods.rhino.DefiningClassLoader` */
+        type DefiningClassLoader = Internal.DefiningClassLoader;
 
-    }
-
-    namespace Types {
-        interface TypedMap<T extends {}> extends Alias.Map<keyof T, T[keyof T]> {
-            abstract get<K extends keyof T>(key: K): T[K];
-            abstract put<K extends keyof T>(key: K, value: T[K]): T[K];
-        }
     }
 
     namespace CONFIG {
@@ -32,17 +52,11 @@ declare namespace MultiThreadic {
         const THREAD_NAME_PREFIX: string;
     }
 
-    interface ThreadInfo {
-        thread: Alias.Thread;
-        context: Alias.Context;
+    class TaskWrapper<T> implements Alias.Runnable, Alias.Callable<T> {
+        constructor(task: () => T);
+        run(): void;
+        call(): T;
     }
-
-    type theGlobal = {
-        threads: Alias.ConcurrentHashMap<string, Types.TypedMap<ThreadInfo>>;
-        executorServices: Alias.ConcurrentHashMap<string, Alias.ExecutorService>;
-    }
-
-    const threadFactory: (runnable: () => void) => Alias.Thread;
 
     function currentThread(): Alias.Thread;
     function newThread(identifier: string, task: () => void): Alias.Thread;
@@ -51,6 +65,22 @@ declare namespace MultiThreadic {
     function stopThread(identifier: string, waitTimeInMillis: number = 1000): boolean;
     function stopThenNewThread(identifier: string, task: () => void, waitTimeInMillis: number = 1000): Alias.Thread;
     function sleep(millis: number): void;
+
+    namespace Atomic {
+        const Integer: Alias.$AtomicInteger;
+        const Long: Alias.$AtomicLong;
+        const Boolean: Alias.$AtomicBoolean;
+        const Reference: Alias.$AtomicReference;
+        const IntegerArray: Alias.$AtomicIntegerArray;
+        const LongArray: Alias.$AtomicLongArray;
+        const ReferenceArray: Alias.$AtomicReferenceArray;
+    }
+
+    type theGlobal = {
+        threads: Alias.ConcurrentHashMap<string, Alias.Thread>;
+        executorServices: Alias.ConcurrentHashMap<string, Alias.ExecutorService>;
+        classLoader: Alias.DefiningClassLoader;
+    }
 
     namespace Executors {
         function newScheduledThreadPool(threadCount: number): Alias.ScheduledExecutorService;

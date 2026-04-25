@@ -15,11 +15,11 @@ Object.freeze(CONFIG);
 //#region - Bypass class filter
 
 const $String = Java.loadClass("java.lang.String");
+
 const $ScriptableObject = Java.loadClass("dev.latvian.mods.rhino.ScriptableObject");
+const $NativeJavaClass  = Java.loadClass("dev.latvian.mods.rhino.NativeJavaClass");
 
 let loadSpecial = (() => {
-
-const $NativeJavaClass  = Java.loadClass("dev.latvian.mods.rhino.NativeJavaClass");
 
 let $Class_forName = Java.getClass().getClass().getMethod("forName", $String);
 
@@ -34,7 +34,8 @@ let scriptManagerClass = loadSpecial("dev.latvian.mods.kubejs.script.ScriptManag
 const currentContext = scriptManagerClass.getMethod("getCurrentContext").invoke(null);
 
 /**
- * @param {string} className
+ * @param {string} className 
+ * @return {any}
  */
 return (className) => {
     let clazz = loadSpecial(className);
@@ -42,6 +43,11 @@ return (className) => {
 }
 
 })();
+
+/** @type {typeof Internal.ScriptManager} */
+const $ScriptManager = loadSpecial("dev.latvian.mods.kubejs.script.ScriptManager");
+
+const currentContext = $ScriptManager.getCurrentContext();
 
 //#endregion
 
@@ -83,15 +89,132 @@ const $Thread            =    loadSpecial("java.lang.Thread");
 const $ConcurrentHashMap = Java.loadClass("java.util.concurrent.ConcurrentHashMap");
 const $Executors         = Java.loadClass("java.util.concurrent.Executors");
 
-const $Context    = Java.loadClass("dev.latvian.mods.rhino.Context");
-const $Function   = Java.loadClass("dev.latvian.mods.rhino.Function");
-const $Scriptable = Java.loadClass("dev.latvian.mods.rhino.Scriptable");
+const $Context             = Java.loadClass("dev.latvian.mods.rhino.Context");
+const $DefiningClassLoader = Java.loadClass("dev.latvian.mods.rhino.DefiningClassLoader");
+const $Function            = Java.loadClass("dev.latvian.mods.rhino.Function");
+const $Scriptable          = Java.loadClass("dev.latvian.mods.rhino.Scriptable");
+
+const $ClassWriter = loadSpecial("org.objectweb.asm.ClassWriter");
+const $Opcodes     = loadSpecial("org.objectweb.asm.Opcodes");
+
+const MultiThreadicClassLoader = getOrDefault(theGlobal, "classLoader", () => new $DefiningClassLoader());
+
+//#endregion
+
+//#region - Task Wrapper
+
+/**
+ * @type {typeof MultiThreadic.TaskWrapper}
+ */
+let TaskWrapper = (() => {
+
+    // If TaskWrapper is already defined in the MultiThreadicClassLoader
+    // Return found class instead of creating a new one
+    try {
+        let clazz = MultiThreadicClassLoader.loadClass(CLASS_WRAPPER_CLASS_NAME);
+        return new $NativeJavaClass(currentContext, $ScriptableObject.getTopLevelScope({}), clazz);
+    } catch (e) {}
+
+    const CLASS_WRAPPER_CLASS_NAME = "TaskWrapper";
+
+    // public class ClassWrapper implements Runnable, Callable<Object>
+    let cw = new $ClassWriter(0);
+    cw.visit(
+        $Opcodes.V17,
+        $Opcodes.ACC_PUBLIC | $Opcodes.ACC_SUPER,
+        CLASS_WRAPPER_CLASS_NAME,
+        null,
+        "java/lang/Object",
+        ["java/lang/Runnable", "java/util/concurrent/Callable"]
+    );
+
+    // private static final Object[] EMPTY_ARR = new Object[0];
+    cw.visitField($Opcodes.ACC_PRIVATE | $Opcodes.ACC_STATIC | $Opcodes.ACC_FINAL, "EMPTY_ARR", "[Ljava/lang/Object;", null, null).visitEnd();
+
+    // private final BaseFunction task;
+    cw.visitField($Opcodes.ACC_PRIVATE | $Opcodes.ACC_FINAL, "task", "Ldev/latvian/mods/rhino/BaseFunction;", null, null).visitEnd();
+
+    // <clinit>
+    let clinit = cw.visitMethod($Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
+    clinit.visitCode();
+    clinit.visitInsn($Opcodes.ICONST_0);
+    clinit.visitTypeInsn($Opcodes.ANEWARRAY, "java/lang/Object");
+    clinit.visitFieldInsn($Opcodes.PUTSTATIC, CLASS_WRAPPER_CLASS_NAME, "EMPTY_ARR", "[Ljava/lang/Object;");
+    clinit.visitInsn($Opcodes.RETURN);
+    clinit.visitMaxs(1, 0);
+    clinit.visitEnd();
+
+    // public ClassWrapper(BaseFunction task) {
+    //     this.task = task;
+    // }
+    let constructor = cw.visitMethod($Opcodes.ACC_PUBLIC, "<init>", "(Ldev/latvian/mods/rhino/BaseFunction;)V", null, null);
+    constructor.visitCode();
+    constructor.visitVarInsn($Opcodes.ALOAD, 0);
+    constructor.visitInsn($Opcodes.DUP);
+    constructor.visitMethodInsn($Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+    constructor.visitVarInsn($Opcodes.ALOAD, 1);
+    constructor.visitFieldInsn($Opcodes.PUTFIELD, CLASS_WRAPPER_CLASS_NAME, "task", "Ldev/latvian/mods/rhino/BaseFunction;");
+    constructor.visitInsn($Opcodes.RETURN);
+    constructor.visitMaxs(2, 2);
+    constructor.visitEnd();
+
+    // @Override
+    // public void run() {
+    //     Context cx = Context.enter();
+    //     Scriptable scope = this.task.getParentScope();
+    //     this.task.call(cx, scope, null, EMPTY_ARR);
+    // }
+    let runMethod = cw.visitMethod($Opcodes.ACC_PUBLIC, "run", "()V", null, null);
+    runMethod.visitCode();
+    runMethod.visitVarInsn($Opcodes.ALOAD, 0);
+    runMethod.visitFieldInsn($Opcodes.GETFIELD, CLASS_WRAPPER_CLASS_NAME, "task", "Ldev/latvian/mods/rhino/BaseFunction;");
+    runMethod.visitInsn($Opcodes.DUP);
+    runMethod.visitMethodInsn($Opcodes.INVOKESTATIC, "dev/latvian/mods/rhino/Context", "enter", "()Ldev/latvian/mods/rhino/Context;", false);
+    runMethod.visitInsn($Opcodes.SWAP);
+    runMethod.visitMethodInsn($Opcodes.INVOKEVIRTUAL, "dev/latvian/mods/rhino/BaseFunction", "getParentScope", "()Ldev/latvian/mods/rhino/Scriptable;", false);
+    runMethod.visitInsn($Opcodes.ACONST_NULL);
+    runMethod.visitFieldInsn($Opcodes.GETSTATIC, CLASS_WRAPPER_CLASS_NAME, "EMPTY_ARR", "[Ljava/lang/Object;");
+    runMethod.visitMethodInsn($Opcodes.INVOKEVIRTUAL, "dev/latvian/mods/rhino/BaseFunction", "call",
+        "(Ldev/latvian/mods/rhino/Context;Ldev/latvian/mods/rhino/Scriptable;Ldev/latvian/mods/rhino/Scriptable;[Ljava/lang/Object;)Ljava/lang/Object;", false);
+    runMethod.visitInsn($Opcodes.POP);
+    runMethod.visitInsn($Opcodes.RETURN);
+    runMethod.visitMaxs(5, 1);
+    runMethod.visitEnd();
+
+    // @Override
+    // public Object call() {
+    //     Context cx = Context.enter();
+    //     Scriptable scope = this.task.getParentScope();
+    //     return this.task.call(cx, scope, null, EMPTY_ARR);
+    // }
+    let callMethod = cw.visitMethod($Opcodes.ACC_PUBLIC, "call", "()Ljava/lang/Object;", null, null);
+    callMethod.visitCode();
+    callMethod.visitVarInsn($Opcodes.ALOAD, 0);
+    callMethod.visitFieldInsn($Opcodes.GETFIELD, CLASS_WRAPPER_CLASS_NAME, "task", "Ldev/latvian/mods/rhino/BaseFunction;");
+    callMethod.visitInsn($Opcodes.DUP);
+    callMethod.visitMethodInsn($Opcodes.INVOKESTATIC, "dev/latvian/mods/rhino/Context", "enter", "()Ldev/latvian/mods/rhino/Context;", false);
+    callMethod.visitInsn($Opcodes.SWAP);
+    callMethod.visitMethodInsn($Opcodes.INVOKEVIRTUAL, "dev/latvian/mods/rhino/BaseFunction", "getParentScope", "()Ldev/latvian/mods/rhino/Scriptable;", false);
+    callMethod.visitInsn($Opcodes.ACONST_NULL);
+    callMethod.visitFieldInsn($Opcodes.GETSTATIC, CLASS_WRAPPER_CLASS_NAME, "EMPTY_ARR", "[Ljava/lang/Object;");
+    callMethod.visitMethodInsn($Opcodes.INVOKEVIRTUAL, "dev/latvian/mods/rhino/BaseFunction", "call",
+        "(Ldev/latvian/mods/rhino/Context;Ldev/latvian/mods/rhino/Scriptable;Ldev/latvian/mods/rhino/Scriptable;[Ljava/lang/Object;)Ljava/lang/Object;", false);
+    callMethod.visitInsn($Opcodes.ARETURN);
+    callMethod.visitMaxs(5, 1);
+    callMethod.visitEnd();
+
+    cw.visitEnd();
+    let classBytes = cw.toByteArray();
+    let clazz = MultiThreadicClassLoader.defineClass(CLASS_WRAPPER_CLASS_NAME, classBytes);
+    return new $NativeJavaClass(currentContext, $ScriptableObject.getTopLevelScope({}), clazz);
+
+})();
 
 //#endregion
 
 //#region - Threads
 
-const threadInfos = getOrDefault(theGlobal, "threads", () => new $ConcurrentHashMap());
+const threads = getOrDefault(theGlobal, "threads", () => new $ConcurrentHashMap());
 
 /** @type {Internal.Class<dev.latvian.mods.rhino.Function>} */
 let functionClass = $Function.__javaObject__;
@@ -101,20 +224,10 @@ let functionCallMethod = functionClass.getMethod("call", $Context, $Scriptable, 
 /**
  * @param {() => void} runnable 
  * @param {string | null} identifier
- * @param {MultiThreadic.Types.TypedMap<MultiThreadic.ThreadInfo> | null} threadInfo
  */
-let threadFactory = (runnable, identifier, threadInfo) => {
-    let scope = $ScriptableObject.getTopLevelScope({_: runnable});
-    let task = () => {
-        // Rhino won't convert automatically as `invoke` accepts `Object[]`, not any specific types
-        // So we use manually converted `emptyArr`
-        let context = $Context.enter();
-        if (threadInfo) threadInfo.put("context", context);
-        functionCallMethod.invoke(runnable, context, scope, null, emptyArr);
-    };
+let threadFactory = (runnable, identifier) => {
+    let task = new TaskWrapper(runnable);
     let thread = identifier ? new $Thread(task, CONFIG.THREAD_NAME_PREFIX + identifier) : new $Thread(task);
-    if (threadInfo) threadInfo.put("thread", thread);
-    console.info(thread);
     return thread;
 };
 
@@ -163,31 +276,27 @@ let exported = {
             throw new TypeError("Task must be a function, but got " + $String.valueOf(task));
         }
 
-        /** @type {MultiThreadic.Types.TypedMap<MultiThreadic.ThreadInfo>} */
-        let threadInfo = new $HashMap();
-        let existing = threadInfos.putIfAbsent(identifier, threadInfo);
-        if (existing != null) {
-            return null;
-        }
-        threadFactory(task, identifier, threadInfo);
-        return threadInfo.get("thread");
+        let resultThread = null;
+        threads.computeIfAbsent(identifier, (_key) => {
+            let thread = threadFactory(task, identifier);
+            resultThread = thread;
+            return thread;
+        });
+        return resultThread;
     },
     listThreads() {
         let list = [];
-        threadInfos.keySet().forEach(s => list.push(s));
+        threads.keySet().forEach(s => list.push(s));
         return list;
     },
     getThread(identifier) {
-        let threadInfo = threadInfos.get(identifier);
-        if (threadInfo == null) return null;
-        return threadInfo.get("thread");
+        return threads.get(identifier);
     },
     stopThread(identifier, waitTimeInMillis) {
-        let threadInfo = threadInfos.get(identifier);
-        if (threadInfo == null) return true;
-        let thread = threadInfo.get("thread");
+        let thread = threads.get(identifier);
+        if (thread == null) return true;
         if (!thread.isAlive()) {
-            threadInfos.remove(identifier);
+            threads.remove(identifier);
             return true;
         }
         thread.interrupt();
@@ -196,7 +305,7 @@ let exported = {
         if (thread.isAlive()) {
             return false;
         } else {
-            threadInfos.remove(identifier);
+            threads.remove(identifier);
             return true;
         }
     },
@@ -208,11 +317,18 @@ let exported = {
     sleep(millis) {
         $Thread.sleep(millis);
     },
-    // TODO: Mention in JSDoc that user should never call this
-    //       unless they know what they are doing
-    threadFactory: (t) => threadFactory(t),
+    TaskWrapper: TaskWrapper,
     CONFIG: CONFIG,
-    Executors: ExecutorsWrapper
+    Executors: ExecutorsWrapper,
+    Atomic: {
+        Integer:        Java.loadClass("java.util.concurrent.atomic.AtomicInteger"),
+        Long:           Java.loadClass("java.util.concurrent.atomic.AtomicLong"),
+        Boolean:        Java.loadClass("java.util.concurrent.atomic.AtomicBoolean"),
+        Reference:      Java.loadClass("java.util.concurrent.atomic.AtomicReference"),
+        IntegerArray:   Java.loadClass("java.util.concurrent.atomic.AtomicIntegerArray"),
+        LongArray:      Java.loadClass("java.util.concurrent.atomic.AtomicLongArray"),
+        ReferenceArray: Java.loadClass("java.util.concurrent.atomic.AtomicReferenceArray")
+    }
 };
 
 return Object.freeze(exported);
