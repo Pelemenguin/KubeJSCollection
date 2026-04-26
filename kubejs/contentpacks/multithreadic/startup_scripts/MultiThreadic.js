@@ -1,7 +1,39 @@
 // priority: 2147483647
 
+/*
+ * MIT License
+ * 
+ * Copyright (c) 2026 Pelemenguin
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 /// <reference path="../probe/MultiThreadic.d.ts" />
 
+/**
+ * @author Pelemenguin
+ * @version 1.0
+ * @license MIT
+ * @copyright Pelemenguin 2026
+ */
+
+/** @type {typeof MultiThreadic} */
 const MultiThreadic = (() => {
 
 /** @type {typeof MultiThreadic.CONFIG} */
@@ -81,12 +113,15 @@ let getOrDefault = (obj, prop, defaultProvider) => {
 
 //#region - Java classes
 
-const $ArrayList         = Java.loadClass("java.util.ArrayList");
-const $Object            = Java.loadClass("java.lang.Object");
+const $ArrayList                      = Java.loadClass("java.util.ArrayList");
+const $Object                         = Java.loadClass("java.lang.Object");
 /** @type {typeof Internal.Thread} */
-const $Thread            =    loadSpecial("java.lang.Thread");
-const $ConcurrentHashMap = Java.loadClass("java.util.concurrent.ConcurrentHashMap");
-const $Executors         = Java.loadClass("java.util.concurrent.Executors");
+const $Thread                         =    loadSpecial("java.lang.Thread");
+const $ConcurrentHashMap              = Java.loadClass("java.util.concurrent.ConcurrentHashMap");
+const $Executors                      = Java.loadClass("java.util.concurrent.Executors");
+const $ThreadPoolExecutor             = Java.loadClass("java.util.concurrent.ThreadPoolExecutor");
+const $ThreadPoolExecutor$AbortPolicy = Java.loadClass("java.util.concurrent.ThreadPoolExecutor$AbortPolicy");
+const $LinkedBlockingQueue            = Java.loadClass("java.util.concurrent.LinkedBlockingQueue");
 
 const $DefiningClassLoader = Java.loadClass("dev.latvian.mods.rhino.DefiningClassLoader");
 
@@ -238,7 +273,12 @@ const executorServices = getOrDefault(theGlobal, "executorServices", () => new $
  * @param {MultiThreadic.Alias.ExecutorService} executor 
  */
 const ExecutorServiceWrapper = function(executor) {
-    this._delegate = executor;
+    Object.defineProperty(this, "_delegate", {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: executor
+    });
 };
 
 /** @type {MultiThreadic.ExecutorServiceWrapper["execute"]} */
@@ -409,7 +449,6 @@ ScheduledExecutorServiceWrapper.prototype.scheduleWithFixedDelay = function(task
 
 /**
  * @param {() => Internal.ExecutorService} creator 
- * @returns {ExecutorServiceWrapper}
  */
 let wrapNewExecutor = (creator) => (identifier) => {
     let result;
@@ -457,10 +496,10 @@ const ExecutorsWrapper = {
             : $Executors.newCachedThreadPool(threadFactory)
         )(identifier);
     },
-    scheduledThreadPool(identifier, nThreads, threadFactory) {
+    scheduledThreadPool(identifier, corePoolSize, threadFactory) {
         return wrapNewScheduledExecutor(() => threadFactory === undefined
-            ? $Executors.newScheduledThreadPool(nThreads)
-            : $Executors.newScheduledThreadPool(nThreads, threadFactory)
+            ? $Executors.newScheduledThreadPool(corePoolSize)
+            : $Executors.newScheduledThreadPool(corePoolSize, threadFactory)
         )(identifier);
     },
     singleThreadExecutor(identifier, threadFactory) {
@@ -481,6 +520,18 @@ const ExecutorsWrapper = {
         } else {
             return wrapNewExecutor(() => $Executors.newWorkStealingPool())(identifier);
         }
+    },
+    customThreadPool(identifier, parameters) {
+        let corePoolSize = parameters.corePoolSize || 0;
+        let maximumPoolSize = parameters.maximumPoolSize || 2147483647; // Integer.MAX_VALUE
+        let keepAliveTime = parameters.keepAliveTime || 0;
+        let unit = parameters.timeUnit || "milliseconds";
+        let workQueue = parameters.workQueue || new $LinkedBlockingQueue();
+        let threadFactory = parameters.threadFactory || $Executors.defaultThreadFactory();
+        let rejectedExecutionHandler = parameters.rejectedExecutionHandler || new $ThreadPoolExecutor$AbortPolicy();
+        return wrapNewExecutor(() =>
+            new $ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, rejectedExecutionHandler)
+        )(identifier);
     },
 
     listExecutors() {
@@ -626,7 +677,9 @@ let exported = {
     },
     stopThenNewThread(identifier, task, waitTimeInMillis) {
         let stopped = exported.stopThread(identifier, waitTimeInMillis);
-        if (!stopped) return null;
+        if (!stopped) {
+            throw new Error("Failed to stop existing thread with identifier '" + identifier + "'. New thread creation aborted.");
+        }
         return exported.newThread(identifier, task);
     },
     sleep(millis) {
