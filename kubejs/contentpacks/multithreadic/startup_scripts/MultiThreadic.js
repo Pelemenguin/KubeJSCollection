@@ -81,7 +81,6 @@ let getOrDefault = (obj, prop, defaultProvider) => {
 
 //#region - Java classes
 
-const $Arrays            = Java.loadClass("java.util.Arrays");
 const $ArrayList         = Java.loadClass("java.util.ArrayList");
 const $Object            = Java.loadClass("java.lang.Object");
 /** @type {typeof Internal.Thread} */
@@ -89,12 +88,10 @@ const $Thread            =    loadSpecial("java.lang.Thread");
 const $ConcurrentHashMap = Java.loadClass("java.util.concurrent.ConcurrentHashMap");
 const $Executors         = Java.loadClass("java.util.concurrent.Executors");
 
-const $Context             = Java.loadClass("dev.latvian.mods.rhino.Context");
 const $DefiningClassLoader = Java.loadClass("dev.latvian.mods.rhino.DefiningClassLoader");
-const $Function            = Java.loadClass("dev.latvian.mods.rhino.Function");
-const $Scriptable          = Java.loadClass("dev.latvian.mods.rhino.Scriptable");
 
 const $ClassWriter = loadSpecial("org.objectweb.asm.ClassWriter");
+const $Label       = loadSpecial("org.objectweb.asm.Label");
 const $Opcodes     = loadSpecial("org.objectweb.asm.Opcodes");
 
 const MultiThreadicClassLoader = getOrDefault(theGlobal, "classLoader", () => new $DefiningClassLoader());
@@ -230,9 +227,6 @@ let threadFactory = (runnable, identifier) => {
     }
     return thread;
 };
-
-// Force conversion
-let emptyArr = $Arrays["copyOf(java.lang.Object[],int)"]([], 0);
 
 //#endregion
 
@@ -525,6 +519,63 @@ Object.freeze(ScheduledExecutorServiceWrapper.prototype);
 
 //#endregion
 
+//#region - Synchronized
+
+/** @type {{runSync: <V>(lock: any, task: MultiThreadic.Types.CallableOrLambda<V>) => V}} */
+let SyncHelper = (() => {
+
+    const SYNC_HELPER_CLASS_NAME = "SyncHelper";
+
+    try {
+        let clazz = MultiThreadicClassLoader.loadClass(SYNC_HELPER_CLASS_NAME);
+        return new $NativeJavaClass(currentContext, $ScriptableObject.getTopLevelScope({}), clazz);
+    } catch (e) {}
+
+    let cw = new $ClassWriter($ClassWriter.COMPUTE_MAXS | $ClassWriter.COMPUTE_FRAMES);
+    cw.visit(
+        $Opcodes.V17,
+        $Opcodes.ACC_PUBLIC | $Opcodes.ACC_SUPER | $Opcodes.ACC_FINAL,
+        SYNC_HELPER_CLASS_NAME,
+        null,
+        "java/lang/Object",
+        null
+    );
+
+    // public static Object runSync(Object lock, Callable<Object> task) {
+    //     synchronized(lock) {
+    //         return task.call();
+    //     }
+    // }
+    let startLabel = new $Label();
+    let tryEndLabel = new $Label();
+    let method = cw.visitMethod($Opcodes.ACC_PUBLIC | $Opcodes.ACC_STATIC, "runSync",
+        "(Ljava/lang/Object;Ljava/util/concurrent/Callable;)Ljava/lang/Object;", null, ["java/lang/Throwable"]);
+    method.visitTryCatchBlock(startLabel, tryEndLabel, tryEndLabel, null);
+    method.visitCode();
+    method.visitLabel(startLabel);
+    method.visitVarInsn($Opcodes.ALOAD, 0);
+    method.visitInsn($Opcodes.MONITORENTER);
+    method.visitVarInsn($Opcodes.ALOAD, 1);
+    method.visitMethodInsn($Opcodes.INVOKEINTERFACE, "java/util/concurrent/Callable", "call", "()Ljava/lang/Object;", true);
+    method.visitVarInsn($Opcodes.ALOAD, 0);
+    method.visitInsn($Opcodes.MONITOREXIT);
+    method.visitInsn($Opcodes.ARETURN);
+    method.visitLabel(tryEndLabel);
+    method.visitVarInsn($Opcodes.ALOAD, 0);
+    method.visitInsn($Opcodes.MONITOREXIT);
+    method.visitInsn($Opcodes.ATHROW);
+    method.visitMaxs(0, 0);
+    method.visitEnd();
+
+    cw.visitEnd();
+    let classBytes = cw.toByteArray();
+    let clazz = MultiThreadicClassLoader.defineClass(SYNC_HELPER_CLASS_NAME, classBytes);
+    return new $NativeJavaClass(currentContext, $ScriptableObject.getTopLevelScope({}), clazz);
+
+})();
+
+//#endregion
+
 //#region - Export
 
 /** @type {typeof MultiThreadic} */
@@ -581,6 +632,16 @@ let exported = {
     sleep(millis) {
         $Thread.sleep(millis);
     },
+
+    synchronized(lock, task) {
+        if (typeof task === "function") {
+            let wrappedTask = new TaskWrapper(task);
+            return SyncHelper.runSync(lock, wrappedTask);
+        } else {
+            return SyncHelper.runSync(lock, task);
+        }
+    },
+
     TaskWrapper: TaskWrapper,
     ExecutorServiceWrapper: ExecutorServiceWrapper,
     ScheduledExecutorServiceWrapper: ScheduledExecutorServiceWrapper,
@@ -594,6 +655,16 @@ let exported = {
         IntegerArray:   Java.loadClass("java.util.concurrent.atomic.AtomicIntegerArray"),
         LongArray:      Java.loadClass("java.util.concurrent.atomic.AtomicLongArray"),
         ReferenceArray: Java.loadClass("java.util.concurrent.atomic.AtomicReferenceArray")
+    },
+    Locks: {
+        ReentrantLock:          Java.loadClass('java.util.concurrent.locks.ReentrantLock'),
+        ReentrantReadWriteLock: Java.loadClass('java.util.concurrent.locks.ReentrantReadWriteLock'),
+        StampedLock:            Java.loadClass('java.util.concurrent.locks.StampedLock'),
+        Semaphore:              Java.loadClass('java.util.concurrent.Semaphore'),
+        CountDownLatch:         Java.loadClass('java.util.concurrent.CountDownLatch'),
+        CyclicBarrier:          Java.loadClass('java.util.concurrent.CyclicBarrier'),
+        Exchanger:              Java.loadClass('java.util.concurrent.Exchanger'),
+        Phaser:                 Java.loadClass('java.util.concurrent.Phaser')
     }
 };
 
