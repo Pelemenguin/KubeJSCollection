@@ -68,8 +68,23 @@ PelemenguinPacks.LavaAdapter = PackGen.createMetaData("lava_adapter")
 ModGen.createModInfo("lava_adapter", PelemenguinPacks.LavaAdapter)
     .withAuthors("Pelemenguin")
     .withLicense("MIT")
-    .withVersion("1.0")
+    .withVersion("1.1")
     .withDescription("A KubeJS library for extending Java classes or implementing Java interfaces.")
+    .build();
+
+PelemenguinPacks.MultiThreadic = PackGen.createMetaData("multithreadic")
+    .withAuthors(["Pelemenguin"])
+    .withName("MultiThreadic")
+    .withVersion("1.0")
+    .addDependency(KubeJSDependency)
+    .withDescription("Create threads and run asynchronous tasks in KubeJS.")
+    .build();
+
+ModGen.createModInfo("lava_adapter", PelemenguinPacks.MultiThreadic)
+    .withAuthors("Pelemenguin")
+    .withLicense("MIT")
+    .withVersion("1.0")
+    .withDescription("Create threads and run asynchronous tasks in KubeJS.")
     .build();
 
 // ===== DEPRECATED ===== //

@@ -12,5 +12,5 @@
   ],
   "id": "multithreadic",
   "name": "MultiThreadic",
-  "description": ""
+  "description": "Create threads and run asynchronous tasks in KubeJS."
 }
